@@ -7,21 +7,47 @@ import sqlite
 import stat
 import eups
 
-from lsst.testing.pipeQA.LogConverter  import LogFileConverter
-from lsst.testing.pipeQA.TestFailError import TestFailError
-from lsst.testing.pipeQA.Test          import Test
+import LogConverter as logConv
+
+class TestFailError(Exception):
+    def __init__(self, message):
+        self.message = message
+    def __str__(self):
+        return repr(self.message)
+    
+    
+class Test(object):
+
+    def __init__(self, label, value, limits, comment):
+        self.label = label
+        self.value = value
+        self.limits = limits
+        self.comment = comment
+
+    def __str__(self):
+	return self.label+" "+str(self.evaluate())+" value="+str(self.value)+" limits="+str(self.limits)
+
+    def evaluate(self):
+        """Add a test to this testing suite."""
+        
+        # grab a traceback for failed tests
+        if (self.value < self.limits[0] or self.value > self.limits[1]):
+            return False
+        else:
+            return True
+
 
 class TestSet(object):
     
-    def __init__(self, label=None, mainDisplayFull=False):
+    def __init__(self, label=None):
         """Constructor to create a TestSet object for a new suite of tests."""
         
-        wwwBase = "www"
+        wwwBase = os.path.join(eups.productDir("testing_displayQA"), "www")
         testfileName = inspect.stack()[-1][1]
         self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
         self.wwwDir = os.path.join(wwwBase, "test_"+self.testfileBase)
 	if not label is None:
-	    self.wwwDir += "_"+label
+	    self.wwwDir += "."+label
 
         if not os.path.exists(self.wwwDir):
             os.mkdir(self.wwwDir)
@@ -125,9 +151,10 @@ class TestSet(object):
         # grab a traceback for failed tests
         backtrace = ""
         try:
-            if test.evaluate():
+            if not test.evaluate():
                 raise TestFailError("Failed test '"+test.label+"': " +
-                                    "value '" + str(test.value) + "' not in range '" + str(test.limits)+"'.")
+					"value '" + str(test.value) + "' not in range '" +
+					str(test.limits)+"'.")
         except TestFailError, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             backtrace = "".join(traceback.format_stack()[:-1]) + "\n" + str(e)
@@ -166,7 +193,7 @@ class TestSet(object):
         def importLog(logFile):
             base = os.path.basename(logFile)
             table = "log_" + re.sub(".log", "", base)
-            converter = LogFileConverter(logFile)
+            converter = logConv.LogFileConverter(logFile)
             converter.writeSqlite3Table(self.dbFile, table)
 
         # allow a list of filenames to be provided, or just a single filename
