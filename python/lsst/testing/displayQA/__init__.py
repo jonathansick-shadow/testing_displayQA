@@ -1,2 +1,2 @@
-from TestSet import *
+from TestCode import *
 from LogConverter import *
