@@ -6,13 +6,17 @@ class Menu {
 
     protected $_tabs = array();
     
-    public function __construct($relativePath=".") {
+    public function __construct() {
 
 	# a dictionary entry for each tab.
 	# contains: (1) text on the tab, (2) path to link
-	$this->_tabs["home"] = array("Home", "$relativePath/");
-	$this->_tabs["help"] = array("Help", "$relativePath/help.php");
-
+	$this->_tabs["home"] = array("Home", "index.php");
+	$this->_tabs["group"] = array("Group", "group.php");
+	$this->_tabs["summ"] = array("Summary", "summary.php");
+	$this->_tabs["log"]  = array("Logs",    "logs.php");
+	$this->_tabs["sdqa"] = array("SDQA",    "sdqa.php");
+	$this->_tabs["eups"] = array("EUPS",    "eups.php");
+	$this->_tabs["help"] = array("Help",    "help.php");
 
 	
     }
@@ -53,19 +57,7 @@ class Menu {
   }
 
 
-class TestMenu extends Menu {
-    
-    public function __construct() {
-	parent::__construct("..");
-	$this->_tabs["summ"] = array("Summary", "summary.php");
-	$this->_tabs["log"]  = array("Logs",    "logs.php");
-	$this->_tabs["sdqa"] = array("SDQA",    "sdqa.php");
-	$this->_tabs["eups"] = array("EUPS",    "eups.php");
-    }
-}
-
-
-class SpecificTestMenu extends TestMenu {
+class SpecificTestMenu extends Menu {
     
     public function __construct() {
 	parent::__construct("..");

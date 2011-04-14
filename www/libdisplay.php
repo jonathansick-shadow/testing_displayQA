@@ -17,6 +17,18 @@ function tfColor($string, $tf) {
     return $colorout;
 }
 
+function hiLoColor($value, $lo, $hi) {
+    $fvalue = floatval($value);
+    if ($fvalue >= $lo and $fvalue <=$hi) {
+	$colorout = "<font color=\"#00aa00\">$value</font>";
+    } elseif ($fvalue < $lo) {
+	$colorout = "<font color=\"#000088\">$value</font>";
+    } elseif ($fvalue > $hi) {
+	$colorout = "<font color=\"#880000\">$value</font>";
+    }
+    return $colorout;
+}
+
 
 #######################################
 #
@@ -45,18 +57,45 @@ function verifyTest($value, $lo, $hi) {
 }
 
 
+function getDefaultTest() {
 
-function writeTable_ListOfTestResults($testDir) {
+    if (array_key_exists('test', $_GET)) {
+	$testDir = $_GET['test'];
+	setcookie('displayQA_test', $testDir);
+    } elseif (array_key_exists('displayQA_test', $_COOKIE)) {
+	$testDir = $_COOKIE['displayQA_test'];
+    } else {
+	$d = @dir(".");
+	while(false !== ($f = $d->read())) {
+	    if (ereg("test_", $f) and is_dir($f)) {
+		$testDir = $f;
+		break;
+	    }
+	}
+    }
+    return $testDir;
+}
 
-    $table = new Table("width=\"90%\"");
+function writeTable_ListOfTestResults() {
+
+    $testDir = getDefaultTest();
     
-    $table->addHeader(array("Label", "Timestamp", "LowerLimit", "Value", "UpperLimit", "Comment"));
+    $table = new Table("width=\"90%\"");
+
+    $headAttribs = array("align=\"center\"");
+    $table->addHeader(
+	array("Label", "Timestamp", "Value", "Limits", "Comment"),
+	$headAttribs
+	);
 
     global $dbFile;
-    $db = connect();
+    $db = connect($testDir);
     $cmd = "select * from summary";
     $result = $db->query($cmd);
-    
+
+    $tdAttribs = array("align=\"left\"", "align=\"center\"",
+		       "align=\"right\"", "align=\"center\"",
+		       "align=\"left\"");
     foreach ($result as $r) {
 	list($test, $lo, $value, $hi, $comment) =
 	    array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
@@ -64,13 +103,17 @@ function writeTable_ListOfTestResults($testDir) {
 	$pass = verifyTest($value, $lo, $hi);
 	if (!$lo) { $lo = "None"; }
 	if (!$hi) { $hi = "None"; }
-
+	
 	if (!$pass) {
 	    $test .= " <a href=\"backtrace.php?label=$test\">Backtrace</a>";
 	}
 	$mtime = date("Y-m_d H:i:s", $r['entrytime']);
-	
-	$table->addRow(array($test, $mtime, $lo, tfColor($value, $pass), $hi, $comment));
+
+	$loStr = sprintf("%.3f", $lo);
+	$hiStr = sprintf("%.3f", $hi);
+	$valueStr = sprintf("%.3f", $value);
+	$table->addRow(array($test, $mtime,
+			     hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
     }
     $db = NULL;
     return $table->write();
@@ -147,7 +190,9 @@ function displayTable_OneTestResult($testDir, $label) {
 
 
 
-function writeFigures($testDir) {
+function writeFigures() {
+
+    $testDir = getDefaultTest();
     
     $out = "";
     $d = @dir("$testDir");
@@ -159,12 +204,12 @@ function writeFigures($testDir) {
     	$mtime = date("Y-m_d H:i:s", filemtime($path));
 
 	# get the caption
-	$db = connect();
+	$db = connect($testDir);
 	$cmd = "select caption from figure where filename = '$f'";
 	$result = $db->query($cmd)->fetchColumn();
 
 	$img = new Table();
-	$img->addRow(array("<img src=\"$path\">"));
+	$img->addRow(array("<center><img src=\"$path\" width=\"512\"></center>"));
 	$img->addRow(array($result));
 	$img->addRow(array("Timestamp: $mtime"));
 	$out .= $img->write();
@@ -208,36 +253,176 @@ function summarizeTest($testDir) {
 }
 
 
+function getGroup() {
+   if (array_key_exists('group', $_GET)) {
+	$group = $_GET['group'];
+	setcookie('displayQA_group', $group);
+    } elseif (array_key_exists('displayQA_group', $_COOKIE)) {
+	$group = $_COOKIE['displayQA_group'];
+    } else {
+	$group = "";
+    }
+   return $group;
+}
+
 function writeTable_SummarizeAllTests() {
     $dir = "./";
+
+    $group = getGroup();
     
+
     ## go through all directories and look for .summary files
     $d = @dir($dir) or dir("");
 
     $table = new Table("width=\"90%\"");
-    $table->addHeader(array("Test", "mtime", "No. Tests", "No. Passed"));
-    while(false !== ($testDir = $d->read())) { 
+    $table->addHeader(array("Test", "mtime", "No. Tests", "No. Passed", "Fail Rate"));
+    while(false !== ($testDir = $d->read())) {
+	# only interested in directories, but not . or ..
 	if ( ereg("^\.", $testDir) or ! is_dir("$testDir")) {
 	    continue;
 	}
+	# only interested in the group requested
+	if (! ereg("test_".$group, $testDir)) {
+	    continue;
+	}
+
+	# if our group is "" ... ignore other groups
+	$parts = preg_split("/_/", $testDir);
+	if ( $group == "" and (count($parts) > 2)) {
+	    continue;
+	}
+
 	$summ = summarizeTest($testDir);
-	$testLink = "<a href=\"$testDir\">$testDir</a>";
+	$testLink = "<a href=\"summary.php?test=$testDir\">$testDir</a>";
+
 	$passLink = tfColor($summ['npass'], ($summ['npass']==$summ['ntest']));
-	$table->addRow(array($testLink, date("Y-m-d H:i:s", $summ['entrytime']), $summ['ntest'], $passLink));
+	$failRate = "n/a";
+	if ($summ['ntest'] > 0) {
+	    $failRate = 1.0 - 1.0*$summ['npass']/$summ['ntest'];
+	    $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
+	}
+	if ($summ['entrytime'] > 0) {
+	    $timestampStr = date("Y-m-d H:i:s", $summ['entrytime']);
+	} else {
+	    $timestampStr = "n/a";
+	}
+	
+	$table->addRow(array($testLink, $timestampStr,
+			     $summ['ntest'], $passLink, $failRate));
+    }
+    return $table->write();
+    
+}
+function getGroupList() {
+    $dir = "./";
+    $groups = array();
+    $d = @dir($dir) or dir("");
+    while(false !== ($testDir = $d->read())) {
+	$parts = preg_split("/_/", $testDir);
+
+	if (count($parts) > 2) {
+	    $group = $parts[1];
+	} else {
+	    $group = "";
+	}
+	
+	if (array_key_exists($group, $groups)) {
+	    $groups[$group] += 1;
+	} else {
+	    $groups[$group] = 1;
+	}
+    }
+    return $groups;
+}
+
+function writeTable_SummarizeAllGroups() {
+    $dir = "./";
+
+    $groups = getGroupList();
+    
+    ## go through all directories and look for .summary files
+    $table = new Table("width=\"90%\"");
+    $table->addHeader(array("Test", "mtime", "TestSets", "TestSets Passed", "Tests", "Tests Passed", "Fail Rate"));
+    foreach ($groups as $group=>$n) {
+
+	$nTestSets = 0;
+	$nTestSetsPass = 0;
+	$nTest = 0;
+	$nPass = 0;
+
+	$lastUpdate = 0;
+	$d = @dir($dir) or dir("");
+	while(false !== ($testDir = $d->read())) {
+	    if (!ereg("test_".$group, $testDir)) {
+		continue;
+	    }
+	    # must deal with default group "" specially
+	    $parts = preg_split("/_/", $testDir);
+	    if (count($parts) > 2 and $group == "") {
+		continue;
+	    }
+	    
+	    $summ = summarizeTest($testDir);
+	    $nTestSets += 1;
+	    $nTest += $summ['ntest'];
+	    $nPass += $summ['npass'];
+	    if ($summ['ntest'] == $summ['npass']) {
+		$nTestSetsPass += 1;
+	    }
+	    if ($summ['entrytime'] > $lastUpdate) {
+		$lastUpdate = $summ['entrytime'];
+	    }
+	}
+
+	if ($group == "") {
+	    $testLink = "<a href=\"group.php?group=\">Top level</a>";
+	} else {
+	    $testLink = "<a href=\"group.php?group=$group\">$group</a>";
+	}
+
+	$passLink = tfColor($nPass, ($nPass==$nTest));
+	$failRate = "n/a";
+	if ($nTest > 0) {
+	    $failRate = 1.0 - 1.0*$nPass/$nTest;
+	    $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
+	}
+	if ($lastUpdate > 0) {
+	    $timestampStr = date("Y-m-d H:i:s", $lastUpdate);
+	} else {
+	    $timestampStr = "n/a";
+	}
+	
+	$table->addRow(array($testLink, $timestampStr,
+			     $nTestSets, $nTestSetsPass, $nTest, $passLink, $failRate));
     }
     return $table->write();
     
 }
 
+#function writeTable_SummarizeAllGroups() {
+#    $groups = getGroupList();
+#    $tables = "";
+#    foreach ($groups as $group=>$n) {
+#	if ($group == "") {
+#	    $tables .= "<br/><h2>Top level tests</h2><br/>\n";
+#	} else {
+#	    $tables .= "<br/><h2>Test groups</h2><br/>\n";
+#	}
+#	$tables .= writeTable_SummarizeAllTests($group);
+#    }
+#    return $tables;
+#}
+
 function displayTable_SummarizeAllTests() {
-    echo writeTable_SummarizeAllTests();
+    echo writeTable_SummarizeAllTests($group);
 }
 
 
 
 function writeTable_Logs() {
-    
-    $db = connect();
+
+    $testDir = getDefaultTest();
+    $db = connect($testDir);
 
     # first get the tables ... one for each ccd run
     $cmd = "select name from sqlite_sequence where name like 'log%'";
@@ -283,7 +468,8 @@ function displayTable_Logs() {
 
 function writeTable_EupsSetups() {
 
-    $db = connect();
+    $testDir = getDefaultTest();
+    $db = connect($testDir);
 
     # first get the tables ... one for each ccd run
     $cmd = "select name from sqlite_sequence where name like 'eups%'";

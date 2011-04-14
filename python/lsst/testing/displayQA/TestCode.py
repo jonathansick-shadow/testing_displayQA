@@ -39,13 +39,16 @@ class Test(object):
 
 class TestSet(object):
     
-    def __init__(self, label=None):
+    def __init__(self, label=None, group=""):
         """Constructor to create a TestSet object for a new suite of tests."""
         
         wwwBase = os.path.join(eups.productDir("testing_displayQA"), "www")
         testfileName = inspect.stack()[-1][1]
         self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
-        self.wwwDir = os.path.join(wwwBase, "test_"+self.testfileBase)
+	prefix = "test_"
+	if len(group) > 0:
+	    prefix += group+"_"
+        self.wwwDir = os.path.join(wwwBase, prefix+self.testfileBase)
 	if not label is None:
 	    self.wwwDir += "."+label
 

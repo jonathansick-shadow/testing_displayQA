@@ -3,15 +3,14 @@ if (true) {
     ini_set('display_errors', 'On');
     error_reporting(E_ALL);
 }
-$relDir = "..";
-include("$relDir/Menu.php");
-include("$relDir/Page.php");
-include("$relDir/libdisplay.php");
+include_once("Menu.php");
+include_once("Page.php");
+include_once("libdisplay.php");
 
-$menu = new TestMenu();
+$menu = new Menu();
 $page = new Page("LSST Pipetest", "LSST Pipe Test Summary", $menu);
 
-$page->appendContent("<h2>".getCurrentUriDir()."</h2>\n");
+$page->appendContent("<h2>".getDefaultTest()."</h2><br/>\n");
 $page->appendContent(writeTable_ListOfTestResults("."));
 $page->appendContent(writeFigures("."));
 

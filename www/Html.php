@@ -65,30 +65,50 @@ class Table {
     private $_header = array();
     private $_rows = array();
     private $_tagAttribs;
+    private $_headAttribs = array();
+    private $_rowAttribs = array();
     
     public function __construct($tagAttribs = "") {
 	$this->_tagAttribs = $tagAttribs;
     }
-    public function addHeader($array) {
+    public function addHeader($array, $tdAttribs=array()) {
 	$this->_header = $array;
+	$this->_headAttribs = $tdAttribs;
     }
-    public function addRow($array) {
+    public function addRow($array, $tdAttribs=array()) {
 	$this->_rows[] = $array;
+	$this->_rowAttribs[] = $tdAttribs;
     }
     public function __toString() {
 	$s = "<table ".$this->_tagAttribs.">\n";
-	$s .= $this->_writeRow($this->_header);
-	foreach ($this->_rows as $row) {
-	    $s .= $this->_writeRow($row);
+	$s .= $this->_writeRow($this->_header, "th", $this->_headAttribs);
+	$n = count($this->_rows);
+	$haveAttribs = ($n == count($this->_rowAttribs));
+	for($i=0; $i < $n; $i++) {
+	    $row = $this->_rows[$i];
+	    $tdAttrib = $haveAttribs ? $this->_rowAttribs[$i] : "";
+	    $s .= $this->_writeRow($row, "td", $tdAttrib);
 	}
 	$s .= "</table>\n";
 	return $s;
     }
     public function write() { return $this->__toString(); }
-    private function _writeRow($array, $td="td") {
+    private function _writeRow($array, $td="td", $tdAttribs=array()) {
 	$row = "<tr>";
-	foreach ($array as $entry) {
-	    $row .= "<$td>$entry</$td>";
+	$n = count($array);
+	$nAttrib = count($tdAttribs);
+	$haveAttribs = ($n == $nAttrib);
+	$haveOneAttrib = ($nAttrib == 1);
+	
+	for($i=0; $i<$n; $i++) {
+	    $entry = $array[$i];
+	    $tdAttrib = "";
+	    if ($haveAttribs) {
+		$tdAttrib = $tdAttribs[$i];
+	    } elseif ($haveOneAttrib) {
+		$tdAttrib = $tdAttribs[0];
+	    }
+	    $row .= "<$td $tdAttrib>$entry</$td>";
 	}
 	$row .= "</tr>\n";
 	return $row;
