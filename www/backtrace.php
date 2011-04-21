@@ -11,7 +11,7 @@ $menu = new SpecificTestMenu();
 $page = new Page("LSST Pipetest", "LSST Pipe Test Summary", $menu);
 
 $page->appendContent("<h2>".getCurrentUriDir()."</h2><br/>\n");
-$page->appendContent(writeTable_OneTestResult(".", $_GET['label']) . "<br/>\n");
-$page->appendContent(write_OneBackTrace(".", $_GET['label']));
+$page->appendContent(writeTable_OneTestResult($_GET['label']) . "<br/>\n");
+$page->appendContent(write_OneBackTrace($_GET['label']));
 
 echo $page;

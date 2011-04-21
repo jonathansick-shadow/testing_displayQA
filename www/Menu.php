@@ -60,7 +60,7 @@ class Menu {
 class SpecificTestMenu extends Menu {
     
     public function __construct() {
-	parent::__construct("..");
+	parent::__construct();
 	$this->_tabs["backtrace"] = array("Backtrace", "backtrace.php");
     }
 }

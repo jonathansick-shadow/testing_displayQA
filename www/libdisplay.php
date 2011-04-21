@@ -95,7 +95,7 @@ function writeTable_ListOfTestResults() {
 
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
 		       "align=\"right\"", "align=\"center\"",
-		       "align=\"left\"");
+		       "align=\"left\" width=\"200\"");
     foreach ($result as $r) {
 	list($test, $lo, $value, $hi, $comment) =
 	    array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
@@ -112,6 +112,7 @@ function writeTable_ListOfTestResults() {
 	$loStr = sprintf("%.3f", $lo);
 	$hiStr = sprintf("%.3f", $hi);
 	$valueStr = sprintf("%.3f", $value);
+
 	$table->addRow(array($test, $mtime,
 			     hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
     }
@@ -125,22 +126,33 @@ function displayTable_ListOfTestResults($testDir) {
 
 
 
-function writeTable_OneTestResult($testDir, $label) {
+function writeTable_OneTestResult($label) {
 
+    $testDir = getDefaultTest();
+    
     if (empty($label)) {
 	return "<h2>No test label specified. Cannot display test result.</h2><br/>\n";
     }
     
     $table = new Table("width=\"90%\"");
     
-    $table->addHeader(array("Label", "Timestamp", "LowerLimit", "Value", "UpperLimit", "Comment"));
+    $headAttribs = array("align=\"center\"");
+    $table->addHeader(
+	array("Label", "Timestamp", "Value", "Limits", "Comment"),
+	$headAttribs
+	);
+    #$table->addHeader(array("Label", "Timestamp", "LowerLimit", "Value", "UpperLimit", "Comment"));
 
     global $dbFile;
     #$mtime = date("Y-m_d H:i:s", filemtime("$testDir/$dbFile"));
-    $db = connect();
+    $db = connect($testDir);
     $cmd = "select * from summary where label='$label'";
+
     $result = $db->query($cmd);
     
+    $tdAttribs = array("align=\"left\"", "align=\"center\"",
+		       "align=\"right\"", "align=\"center\"",
+		       "align=\"left\" width=\"200\"");
     foreach ($result as $r) {
 	list($test, $timestamp, $lo, $value, $hi, $comment, $backtrace) =
 	    array($r['label'], $r['entrytime'], $r['lowerlimit'], $r['value'], $r['upperlimit'],
@@ -150,22 +162,32 @@ function writeTable_OneTestResult($testDir, $label) {
 	if (!$lo) { $lo = "None"; }
 	if (!$hi) { $hi = "None"; }
 
-	$table->addRow(array($test, date("Y-m-d H:i:s", $timestamp),
-			     $lo, tfColor($value, $pass), $hi, $comment));
+	$mtime = date("Y-m_d H:i:s", $r['entrytime']);
+
+	$loStr = sprintf("%.3f", $lo);
+	$hiStr = sprintf("%.3f", $hi);
+	$valueStr = sprintf("%.3f", $value);
+
+	$table->addRow(array($test, $mtime,
+			     hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
+	#$table->addRow(array($test, date("Y-m-d H:i:s", $timestamp),
+	#		     $lo, hiLoColor($value, $pass), $hi, $comment));
     }
     $db = NULL;
 
     return $table->write();
 }
-function write_OneBacktrace($testDir, $label) {
+function write_OneBacktrace($label) {
 
+    $testDir = getDefaultTest();
+    
     $out = "<h2>Backtrace</h2><br/>\n";
     if (empty($label)) {
 	return "<b>No test label specified. Cannot display backtrace.</b><br/>\n";
     }
     
     global $dbFile;
-    $db = connect();
+    $db = connect($testDir);
     $cmd = "select * from summary where label='$label'";
     $result = $db->query($cmd);
 
