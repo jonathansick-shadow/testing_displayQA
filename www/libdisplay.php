@@ -90,7 +90,7 @@ function writeTable_ListOfTestResults() {
 
     global $dbFile;
     $db = connect($testDir);
-    $cmd = "select * from summary";
+    $cmd = "select * from summary order by label";
     $result = $db->query($cmd);
 
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
@@ -255,7 +255,7 @@ function summarizeTest($testDir) {
     $testCmd = "select count(*) from summary";
     $nTest = $db->query($testCmd)->fetchColumn();
     
-    $passCmd = "select * from summary";
+    $passCmd = "select * from summary order by label";
     $results = $db->query($passCmd);
     $nPass = 0;
     $timestamp = 0;
@@ -295,10 +295,17 @@ function writeTable_SummarizeAllTests() {
 
     ## go through all directories and look for .summary files
     $d = @dir($dir) or dir("");
-
+    $dirs = array();
+    while(false !== ($testDir = $d->read())) {
+	$dirs[] = $testDir;
+    }
+    sort($dirs);
+    
+    $d = @dir($dir) or dir("");
     $table = new Table("width=\"90%\"");
     $table->addHeader(array("Test", "mtime", "No. Tests", "No. Passed", "Fail Rate"));
-    while(false !== ($testDir = $d->read())) {
+    #while(false !== ($testDir = $d->read())) {
+    foreach ($dirs as $testDir) {
 	# only interested in directories, but not . or ..
 	if ( ereg("^\.", $testDir) or ! is_dir("$testDir")) {
 	    continue;
@@ -354,6 +361,7 @@ function getGroupList() {
 	    $groups[$group] = 1;
 	}
     }
+    ksort($groups);
     return $groups;
 }
 
@@ -371,10 +379,18 @@ function writeTable_SummarizeAllGroups() {
 	$nTestSetsPass = 0;
 	$nTest = 0;
 	$nPass = 0;
-
+	
+	$d = @dir($dir) or dir("");
+	$dirs = array();
+	while(false !== ($testDir = $d->read())) {
+	    $dirs[] = $testDir;
+	}
+	asort($dirs);
+	
 	$lastUpdate = 0;
 	$d = @dir($dir) or dir("");
-	while(false !== ($testDir = $d->read())) {
+	#while(false !== ($testDir = $d->read())) {
+	foreach ($dirs as $testDir) {
 	    if (!ereg("test_".$group, $testDir)) {
 		continue;
 	    }
