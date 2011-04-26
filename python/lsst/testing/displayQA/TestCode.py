@@ -57,19 +57,21 @@ class TestSet(object):
 
 
         # create symlinks to the test-specific pages
-        toLink = [
-            ["summary.php",   "summary.php"],
-            ["logs.php",      "logs.php"],
-            ["sdqa.php",      "sdqa.php"],
-            ["eups.php",      "eups.php"],
-            ["redirect.php",  "index.php"],
-            ["backtrace.php", "backtrace.php"],
-            ]
-        for pair in toLink:
-            srcFile = os.path.join("..", pair[0])
-            symlink = os.path.join(self.wwwDir, pair[1])
-            if not os.path.exists(symlink):
-                os.symlink(srcFile, symlink)
+	if False:
+	    toLink = [
+		["summary.php",   "summary.php"],
+		["logs.php",      "logs.php"],
+		["sdqa.php",      "sdqa.php"],
+		["eups.php",      "eups.php"],
+		["redirect.php",  "index.php"],
+		["backtrace.php", "backtrace.php"],
+		]
+	    for pair in toLink:
+		srcFile = os.path.join("..", pair[0])
+		symlink = os.path.join(self.wwwDir, pair[1])
+		if not os.path.exists(symlink):
+		    #os.symlink(srcFile, symlink)
+		    pass
 
                 
         # connect to the db and create the tables
@@ -196,13 +198,16 @@ class TestSet(object):
             self._insertOrUpdate(self.summTable, replacements, ['label'])
 
         
-    def addFigure(self, fig, filename, caption, saveMap=False):
+    def addFigure(self, fig, filename, caption, saveMap=False, navMap=False):
         """Add a figure to this test suite."""
         path = os.path.join(self.wwwDir, filename)
         fig.savefig(path)
 
 	if saveMap:
-	    mapPath = re.sub("\.\w{3}$", ".map", path)
+	    suffix = ".map"
+	    if navMap:
+		suffix = ".navmap"
+	    mapPath = re.sub("\.\w{3}$", suffix, path)
 	    fig.savemap(mapPath)
 	
         keys = [x.split()[0] for x in self.tables[self.figTable]]

@@ -11,11 +11,17 @@ $menu = new Menu();
 $page = new Page("LSST Pipetest", "LSST Pipe Test Summary", $menu);
 
 $page->appendContent("<h2>".getDefaultTest()."</h2><br/>\n");
-#$page->appendContent(writeMappedFigures("."));
-$page->appendContent(writeFigures("."));
+$mapFigs = writeMappedFigures();
+$figs = writeFigures();
+$page->appendContent($mapFigs);
+$page->appendContent($figs);
+if (strlen($mapFigs.$figs) == 0) {
+    $active = getActive();
+    $page->appendContent("No Figures matching $active.  Select a valid sensor, or view <a href=\"summary.php?active=all\">all</a>.<br/><br/>");
+}
 $page->appendContent(writeTable_ListOfTestResults("."));
 
 $page->addSidebar(writeTable_metadata());
-$page->addSidebar(writeMappedFigures("."));
+$page->addSidebar(writeMappedFigures("navmap"));
 
 echo $page;

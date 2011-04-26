@@ -79,12 +79,25 @@ function getDefaultTest() {
 
 function getActive() {
 
-    $active = ".*";
+    $testDir = getDefaultTest();
+    $d = @dir("$testDir");
+    $haveMaps = false;
+    while(false !== ($f = $d->read())) {
+	if (ereg("\.map$", $f)) { $haveMaps = true; break; }
+    }
+    
+    # if there are .map files, the default is a *_all.png file
+    $active = $haveMaps ? "all" : ".*";
     if (array_key_exists('active', $_GET)) {
 	$active = $_GET['active'];
 	setcookie('displayQA_active', $active);
-    } elseif (array_key_exists('displayQA_active', $_COOKIE)) {
+
+    # get a value stored as a cookie, but not if the test changed (then use the default)
+    } elseif (array_key_exists('displayQA_active', $_COOKIE) and (!array_key_exists('test', $_GET))) {
 	$active = $_COOKIE['displayQA_active'];
+	if ($haveMaps and ereg("\.\*", $active)) {
+	    $active = "all";
+	}
     }
     return $active;    
 }
@@ -104,9 +117,20 @@ function writeTable_ListOfTestResults() {
 	);
 
     global $dbFile;
+
     $db = connect($testDir);
+    if (! $db) { return "Unable to query database for $testDir."; }
     $cmd = "select * from summary order by label";
-    $result = $db->query($cmd);
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $result = $prep->fetchAll();
+	
+    #$cmd = "select count(*) from fiber where plate = ? and fiber = ?";
+    #$prep = $db->prepare($cmd);
+    #$prep->execute(array($plate, $fiber));
+    #$n = $prep->fetchColumn();
+    
+    #$result = $db->query($cmd);
 
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
 		       "align=\"right\"", "align=\"center\"",
@@ -230,7 +254,8 @@ function displayTable_OneTestResult($testDir, $label) {
 function writeTable_metadata() {
 
     $testDir = getDefaultTest();
-    
+    $active = getActive();
+	
     $meta = new Table();
     
     $db = connect($testDir);
@@ -239,15 +264,18 @@ function writeTable_metadata() {
     foreach ($results as $r) {
 	$meta->addRow(array($r['key'].":", $r['value']));
     }
+    $meta->addRow(array("Active:", $active));
     return $meta->write();
 }
 
 
 
 
-function writeMappedFigures() {
+function writeMappedFigures($suffix="map") {
 
     $testDir = getDefaultTest();
+
+    $active = getActive();
     
     $out = "";
     $d = @dir("$testDir");
@@ -255,8 +283,9 @@ function writeMappedFigures() {
     	if (! ereg(".(png|PNG|jpg|JPG)", $f)) { continue; }
 
 	$base = preg_replace("/\.(png|PNG|jpg|JPG)/", "", $f);
-	$mapfile = $base . ".map";
+	$mapfile = $base . "." . $suffix;
 
+	if (! ereg($active, $f) and $suffix != 'navmap') { continue; }
 
 	
 	# get the image path
@@ -281,14 +310,17 @@ function writeMappedFigures() {
 				  $x0, $y0, $x1, $y1, $href, $label." ".$info);
 	}
 	$mapString .= "</map>\n";
-	
+
 	$img = new Table();
+	if ($suffix == 'navmap') {
+	    $img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
+	}
 	$img->addRow(array("<center><img src=\"$path\" usemap=\"#$base\"></center>"));
 	$img->addRow(array($result));
-	$img->addRow(array("Timestamp: $mtime"));
-	$img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
+	$img->addRow(array("$f timestamp: $mtime"));
 	$out .= $img->write();
 	$out .= $mapString;
+	
     }
     return $out;
 }
@@ -298,21 +330,23 @@ function writeFigures() {
 
     $testDir = getDefaultTest();
     $active = getActive();
-    
+    $d = @dir($testDir);
+	
     $out = "";
-    $d = @dir("$testDir");
-    while(false !== ($f = $d->read())) {
+    while( false !== ($f = $d->read())) {
     	if (! ereg(".(png|PNG|jpg|JPG)", $f)) { continue; }
 
-	if (! ereg("$active", $f)) { continue; }
+	if (! ereg($active, $f)) { continue; }
 
 	
 	# get the image path
     	$path = "$testDir/$f";
 
 	# skip mapped files (they're obtained with writeMappedFigures() )
-	$map = preg_replace("/.(png|PNG|jpg|JPG)/", ".map", $path);
-	if (file_exists($map)) {
+	$base = preg_replace("/.(png|PNG|jpg|JPG)/", "", $path);
+	$map = $base . ".map";
+	$navmap = $base . ".navmap";
+	if (file_exists($map) or file_exists($navmap)) {
 	    continue;
 	}
 
@@ -324,14 +358,12 @@ function writeFigures() {
 	$result = $db->query($cmd)->fetchColumn();
 
 	$img = new Table();
-	$img->addRow(array("<center><img src=\"$path\" width=\"512\"></center>"));
+	$img->addRow(array("<center><img src=\"$path\"></center>"));
 	$img->addRow(array($result));
 	$img->addRow(array("$f timestamp: $mtime"));
 	$out .= $img->write();
     }
-    if (strlen($out) == 0) {
-	$out = "No Figures matching $active.  Select a valid sensor, or view <a href=\"summary.php?active=all\">all</a>.<br/><br/>";
-    }
+    
     return $out;
 }
 function displayFigures($testDir) {
