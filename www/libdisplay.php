@@ -125,13 +125,6 @@ function writeTable_ListOfTestResults() {
     $prep->execute();
     $result = $prep->fetchAll();
 	
-    #$cmd = "select count(*) from fiber where plate = ? and fiber = ?";
-    #$prep = $db->prepare($cmd);
-    #$prep->execute(array($plate, $fiber));
-    #$n = $prep->fetchColumn();
-    
-    #$result = $db->query($cmd);
-
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
 		       "align=\"right\"", "align=\"center\"",
 		       "align=\"left\" width=\"200\"");
@@ -188,8 +181,9 @@ function writeTable_OneTestResult($label) {
     #$mtime = date("Y-m_d H:i:s", filemtime("$testDir/$dbFile"));
     $db = connect($testDir);
     $cmd = "select * from summary where label='$label'";
-
-    $result = $db->query($cmd);
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $result = $prep->fetchAll();
     
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
 		       "align=\"right\"", "align=\"center\"",
@@ -230,7 +224,9 @@ function write_OneBacktrace($label) {
     global $dbFile;
     $db = connect($testDir);
     $cmd = "select * from summary where label='$label'";
-    $result = $db->query($cmd);
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $result = $prep->fetchAll();
 
     $backtrace = "";
     foreach ($result as $r) {
@@ -260,7 +256,10 @@ function writeTable_metadata() {
     
     $db = connect($testDir);
     $cmd = "select key, value from metadata";
-    $results = $db->query($cmd);
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $results = $prep->fetchAll();
+
     foreach ($results as $r) {
 	$meta->addRow(array($r['key'].":", $r['value']));
     }
@@ -298,7 +297,9 @@ function writeMappedFigures($suffix="map") {
 	# get the caption
 	$db = connect($testDir);
 	$cmd = "select caption from figure where filename = '$f'";
-	$result = $db->query($cmd)->fetchColumn();
+	$prep = $db->prepare($cmd);
+	$prep->execute();
+	$result = $prep->fetchColumn();
 
 	# load the map
 	$mapString = "<map id=\"$base\" name=\"$base\">\n";
@@ -355,8 +356,10 @@ function writeFigures() {
 	# get the caption
 	$db = connect($testDir);
 	$cmd = "select caption from figure where filename = '$f'";
-	$result = $db->query($cmd)->fetchColumn();
-
+	$prep = $db->prepare($cmd);
+	$prep->execute();
+	$result = $prep->fetchColumn();
+	
 	$img = new Table();
 	$img->addRow(array("<center><img src=\"$path\"></center>"));
 	$img->addRow(array($result));
@@ -381,10 +384,15 @@ function summarizeTest($testDir) {
 
     $db = connect($testDir);
     $testCmd = "select count(*) from summary";
-    $nTest = $db->query($testCmd)->fetchColumn();
+    $prep = $db->prepare($testCmd);
+    $prep->execute();
+    $nTest = $prep->fetchColumn();
     
     $passCmd = "select * from summary order by label";
-    $results = $db->query($passCmd);
+    $prep = $db->prepare($passCmd);
+    $prep->execute();
+    $results = $prep->fetchAll();
+    
     $nPass = 0;
     $timestamp = 0;
     foreach($results as $result) {
@@ -592,8 +600,10 @@ function writeTable_Logs() {
 
     # first get the tables ... one for each ccd run
     $cmd = "select name from sqlite_sequence where name like 'log%'";
-    $dbtables = $db->query($cmd);
-
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $dbtables = $prep->fetchAll();
+    
     # make links at the top of the page
     $tables = "";
     $ul = new UnorderedList();
@@ -603,7 +613,9 @@ function writeTable_Logs() {
 	$ul->addItem("<a href=\"#$name\">$name</a>");
 	
 	$cmd = "select * from $name";
-	$logs = $db->query($cmd);
+	$prep = $db->prepare($cmd);
+	$prep->execute();
+	$logs = $prep->fetchAll();
 
 	$tables .= "<h2 id=\"$name\">$name</h2><br/>";
 	
@@ -639,7 +651,9 @@ function writeTable_EupsSetups() {
 
     # first get the tables ... one for each ccd run
     $cmd = "select name from sqlite_sequence where name like 'eups%'";
-    $dbtables = $db->query($cmd);
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $dbtables = $prep->fetchAll();
 
     # make links at the top of the page
     $tables = "";
@@ -650,7 +664,9 @@ function writeTable_EupsSetups() {
 	$ul->addItem("<a href=\"#$name\">$name</a>");
 	
 	$cmd = "select * from $name";
-	$logs = $db->query($cmd);
+	$prep = $db->prepare($cmd);
+	$prep->execute();
+	$logs = $prep->fetchAll();
 
 	$tables .= "<h2 id=\"$name\">$name</h2><br/>";
 	
