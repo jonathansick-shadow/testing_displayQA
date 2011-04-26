@@ -8,6 +8,7 @@ class Page {
     private $_title;
     private $_h1;
     private $_menu;
+    private $_sidebars = array();
 
     public function __construct($title, $h1, $menu) {
 	$this->_title = $title;
@@ -47,9 +48,12 @@ class Page {
 
 	# sidebar content id=left
 	$leftDiv = new Div("id=\"left\"");
-	$leftDiv->append($this->_sidebar());
-	$leftDiv->append($this->_attribution());
-
+	if (count($this->_sidebars) == 0 ) {
+	    $this->getLinks();
+	    $this->getAttribution();
+	}
+	$leftDiv->append($this->_getSidebars());
+	
 	# push right and left content on
 	$contentDiv->append($rightDiv->write());
 	$contentDiv->append($leftDiv->write());
@@ -62,6 +66,29 @@ class Page {
 	return $s;
     }
 
+    public function addSidebar($content, $title="") {
+	$d = new Div("class=\"box\"");
+	if (strlen($title) > 0) {
+	    $d->append("<h2>$title</h2>\n");
+	}
+	$d->append($content);
+	$this->_sidebars[] = $d;
+    }
+
+    public function getLinks() {
+
+	# create the list of links
+	$ul = new UnorderedList();
+	$ul->addItem("<a href=\"http://lsstcorp.org\">LSST Home</a>");
+
+	$this->addSidebar($ul->write(), "Links: ");
+    }
+
+    public function getAttribution() {
+	$d = new Div("style=\"font-size: 0.8em;\"");
+	$d->append("Original design by <a href=\"http://www.minimalistic-design.net\">Minimalistic Design</a>");
+	$this->addSidebar($d->write());
+    }
     
     private function _docType() {
 	$s = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"".
@@ -83,28 +110,15 @@ class Page {
 	return $s;
     }
     
-    private function _sidebar() {
 
-	# create the list of links
-	$ul = new UnorderedList();
-	$ul->addItem("<a href=\"http://lsstcorp.org\">LSST Home</a>");
-
-	# wrap in a box with an h2 title
-	$d = new Div("class=\"box\"");
-	$d->append("<h2>Links: </h2>\n");
-	$d->append($ul->write());
-
-	return $d->write();
+    private function _getSidebars() {
+	$out = "";
+	foreach ($this->_sidebars as $sidebar) {
+	    $out .= $sidebar->write();
+	}
+	return $out;
     }
-
     
-    private function _attribution() {
-	$d = new Div("style=\"font-size: 0.8em;\"");
-	$d->append("Original design by <a href=\"http://www.minimalistic-design.net\">Minimalistic Design</a>");
-	$div = new Div("class=\"box\"");
-	$div->append($d->write());
-	return $div->write();
-    }
     	
   }
 

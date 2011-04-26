@@ -76,12 +76,14 @@ class TestSet(object):
         self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
         self.conn = sqlite.connect(self.dbFile)
         self.curs = self.conn.cursor()
-        self.summTable, self.figTable, self.eupsTable = "summary", "figure", "eups"
+        self.summTable, self.figTable, self.metaTable, self.eupsTable = \
+			"summary", "figure", "metadata", "eups"
         self.tables = {
             self.summTable : ["label text unique", "value double",
                               "lowerlimit double", "upperlimit double", "comment text",
                               "backtrace text"],
             self.figTable  : ["filename text", "caption text"],
+	    self.metaTable : ["key text", "value text"],
             }
 
         self.stdKeys = ["id integer primary key autoincrement", "entrytime timestamp"]
@@ -169,6 +171,21 @@ class TestSet(object):
         self._insertOrUpdate(self.summTable, replacements, ['label'])
 
 
+    def addMetadata(self, *args):
+
+	def addOneKvPair(k, v):
+	    keys = [x.split()[0] for x in self.tables[self.metaTable]]
+	    replacements = dict( zip(keys, [k, v]))
+	    self._insertOrUpdate(self.metaTable, replacements, ['key'])
+	    
+	if len(args) == 1:
+	    for k, v in kvDict.items():
+		addOneKvPair(k, v)
+	elif len(args) == 2:
+	    k, v = args
+	    addOneKvPair(k, v)
+	else:
+	    raise Exception("Metadata must be either dict (1 arg) or key,value pair (2 args).")
         
     def importExceptionDict(self, exceptDict):
         """Given a dictionary of exceptions from TestData object, add the entries to the db."""
@@ -179,11 +196,15 @@ class TestSet(object):
             self._insertOrUpdate(self.summTable, replacements, ['label'])
 
         
-    def addFigure(self, fig, filename, caption):
+    def addFigure(self, fig, filename, caption, saveMap=False):
         """Add a figure to this test suite."""
         path = os.path.join(self.wwwDir, filename)
         fig.savefig(path)
-        
+
+	if saveMap:
+	    mapPath = re.sub("\.\w{3}$", ".map", path)
+	    fig.savemap(mapPath)
+	
         keys = [x.split()[0] for x in self.tables[self.figTable]]
         replacements = dict( zip(keys, [filename, caption]))
         self._insertOrUpdate(self.figTable, replacements, ['filename'])

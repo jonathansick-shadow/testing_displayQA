@@ -48,7 +48,7 @@ ul#nav li#selected a {
 /* main text box */
 #right {
     float: left;
-    width: 76%;
+    width: 52%;
     padding: 1em;
     margin-bottom: 1.2em;
     background: #dddddd;
@@ -58,7 +58,7 @@ ul#nav li#selected a {
 /* side text boxes */
 #left {
     float: right;
-    width: 20%;
+    width: 45%;
     margin: 0 0 10px 0;
 	
 }

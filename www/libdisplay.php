@@ -76,9 +76,24 @@ function getDefaultTest() {
     return $testDir;
 }
 
+
+function getActive() {
+
+    $active = ".*";
+    if (array_key_exists('active', $_GET)) {
+	$active = $_GET['active'];
+	setcookie('displayQA_active', $active);
+    } elseif (array_key_exists('displayQA_active', $_COOKIE)) {
+	$active = $_COOKIE['displayQA_active'];
+    }
+    return $active;    
+}
+
+
 function writeTable_ListOfTestResults() {
 
     $testDir = getDefaultTest();
+    $active = getActive();
     
     $table = new Table("width=\"90%\"");
 
@@ -99,6 +114,8 @@ function writeTable_ListOfTestResults() {
     foreach ($result as $r) {
 	list($test, $lo, $value, $hi, $comment) =
 	    array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
+
+	if (! ereg($active, $test) and ! ereg("all", $active)) { continue; }
 	
 	$pass = verifyTest($value, $lo, $hi);
 	if (!$lo) { $lo = "None"; }
@@ -210,9 +227,25 @@ function displayTable_OneTestResult($testDir, $label) {
 
 
 
+function writeTable_metadata() {
+
+    $testDir = getDefaultTest();
+    
+    $meta = new Table();
+    
+    $db = connect($testDir);
+    $cmd = "select key, value from metadata";
+    $results = $db->query($cmd);
+    foreach ($results as $r) {
+	$meta->addRow(array($r['key'].":", $r['value']));
+    }
+    return $meta->write();
+}
 
 
-function writeFigures() {
+
+
+function writeMappedFigures() {
 
     $testDir = getDefaultTest();
     
@@ -221,8 +254,68 @@ function writeFigures() {
     while(false !== ($f = $d->read())) {
     	if (! ereg(".(png|PNG|jpg|JPG)", $f)) { continue; }
 
+	$base = preg_replace("/\.(png|PNG|jpg|JPG)/", "", $f);
+	$mapfile = $base . ".map";
+
+
+	
 	# get the image path
     	$path = "$testDir/$f";
+    	$mtime = date("Y-m_d H:i:s", filemtime($path));
+	$mapPath = "$testDir/$mapfile";
+
+	if (! file_exists($mapPath)) { continue; }
+	
+	# get the caption
+	$db = connect($testDir);
+	$cmd = "select caption from figure where filename = '$f'";
+	$result = $db->query($cmd)->fetchColumn();
+
+	# load the map
+	$mapString = "<map id=\"$base\" name=\"$base\">\n";
+	$mapList = file($mapPath);
+	foreach($mapList as $line) {
+	    list($label, $x0, $y0, $x1, $y1, $info) = preg_split("/\s+/" ,$line);
+	    $href = "summary.php?active=$label";
+	    $mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
+				  $x0, $y0, $x1, $y1, $href, $label." ".$info);
+	}
+	$mapString .= "</map>\n";
+	
+	$img = new Table();
+	$img->addRow(array("<center><img src=\"$path\" usemap=\"#$base\"></center>"));
+	$img->addRow(array($result));
+	$img->addRow(array("Timestamp: $mtime"));
+	$img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
+	$out .= $img->write();
+	$out .= $mapString;
+    }
+    return $out;
+}
+
+
+function writeFigures() {
+
+    $testDir = getDefaultTest();
+    $active = getActive();
+    
+    $out = "";
+    $d = @dir("$testDir");
+    while(false !== ($f = $d->read())) {
+    	if (! ereg(".(png|PNG|jpg|JPG)", $f)) { continue; }
+
+	if (! ereg("$active", $f)) { continue; }
+
+	
+	# get the image path
+    	$path = "$testDir/$f";
+
+	# skip mapped files (they're obtained with writeMappedFigures() )
+	$map = preg_replace("/.(png|PNG|jpg|JPG)/", ".map", $path);
+	if (file_exists($map)) {
+	    continue;
+	}
+
     	$mtime = date("Y-m_d H:i:s", filemtime($path));
 
 	# get the caption
@@ -233,8 +326,11 @@ function writeFigures() {
 	$img = new Table();
 	$img->addRow(array("<center><img src=\"$path\" width=\"512\"></center>"));
 	$img->addRow(array($result));
-	$img->addRow(array("Timestamp: $mtime"));
+	$img->addRow(array("$f timestamp: $mtime"));
 	$out .= $img->write();
+    }
+    if (strlen($out) == 0) {
+	$out = "No Figures matching $active.  Select a valid sensor, or view <a href=\"summary.php?active=all\">all</a>.<br/><br/>";
     }
     return $out;
 }

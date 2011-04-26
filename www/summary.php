@@ -11,7 +11,11 @@ $menu = new Menu();
 $page = new Page("LSST Pipetest", "LSST Pipe Test Summary", $menu);
 
 $page->appendContent("<h2>".getDefaultTest()."</h2><br/>\n");
-$page->appendContent(writeTable_ListOfTestResults("."));
+#$page->appendContent(writeMappedFigures("."));
 $page->appendContent(writeFigures("."));
+$page->appendContent(writeTable_ListOfTestResults("."));
+
+$page->addSidebar(writeTable_metadata());
+$page->addSidebar(writeMappedFigures("."));
 
 echo $page;
