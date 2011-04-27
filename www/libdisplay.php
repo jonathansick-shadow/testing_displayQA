@@ -83,7 +83,7 @@ function getActive() {
     $d = @dir("$testDir");
     $haveMaps = false;
     while(false !== ($f = $d->read())) {
-	if (ereg("\.map$", $f)) { $haveMaps = true; break; }
+	if (ereg("\.(map|navmap)$", $f)) { $haveMaps = true; break; }
     }
     
     # if there are .map files, the default is a *_all.png file
