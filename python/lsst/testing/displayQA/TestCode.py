@@ -45,7 +45,7 @@ class TestSet(object):
         self.conn = None
 
 	#prodDir = eups.productDir("testing_displayQA")
-	prodDir = os.environ('TESTING_DISPLAYQA_DIR')
+	prodDir = os.environ['TESTING_DISPLAYQA_DIR']
         wwwBase = os.path.join(prodDir, "www")
         testfileName = inspect.stack()[-1][1]
         self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
