@@ -136,8 +136,8 @@ function writeTable_timestamps($group=".*") {
     $oldest = date("Y-m-d H:i:s", $min);
     $latest = date("Y-m-d H:i:s", $max);
 
-    if ($now - $max < 60) {
-	$latest .= "<br/><font color=\"#880000\">(< 1m ago, testing in progress)</font>";
+    if ($now - $max < 120) {
+	$latest .= "<br/><font color=\"#880000\">(< 2m ago, testing in progress)</font>";
     }
     $table->addRow(array($oldest, $latest));
 

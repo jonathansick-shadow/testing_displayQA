@@ -41,8 +41,12 @@ class TestSet(object):
     
     def __init__(self, label=None, group=""):
         """Constructor to create a TestSet object for a new suite of tests."""
-        
-        wwwBase = os.path.join(eups.productDir("testing_displayQA"), "www")
+
+        self.conn = None
+
+	#prodDir = eups.productDir("testing_displayQA")
+	prodDir = os.environ('TESTING_DISPLAYQA_DIR')
+        wwwBase = os.path.join(prodDir, "www")
         testfileName = inspect.stack()[-1][1]
         self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
 	prefix = "test_"
@@ -100,7 +104,8 @@ class TestSet(object):
         self.tests = []
         
     def __del__(self):
-        self.conn.close()
+	if not self.conn is None:
+	    self.conn.close()
 
 
         
