@@ -350,9 +350,15 @@ function writeMappedFigures($suffix="map") {
 	$mapList = file($mapPath);
 	foreach($mapList as $line) {
 	    list($label, $x0, $y0, $x1, $y1, $info) = preg_split("/\s+/" ,$line);
-	    $href = "summary.php?active=$label";
-	    $mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
-				  $x0, $y0, $x1, $y1, $href, $label." ".$info);
+	    if (!ereg("^nolink:", $info)) {
+		$href = "summary.php?active=$label";
+		$mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
+				      $x0, $y0, $x1, $y1, $href, $label." ".$info);
+	    } else {
+		$info = preg_replace("/^nolink:/", "", $info);
+		$mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" title=\"%s\">\n",
+				      $x0, $y0, $x1, $y1, $info);
+	    }
 	}
 	$mapString .= "</map>\n";
 
