@@ -132,8 +132,13 @@ function writeTable_timestamps($group=".*") {
 
     $table = new Table("width=\"80%\"");
     $table->addHeader(array("Oldest Entry", "Most Recent Entry"));
+    $now = time();
     $oldest = date("Y-m-d H:i:s", $min);
     $latest = date("Y-m-d H:i:s", $max);
+
+    if ($now - $max < 60) {
+	$latest .= "<br/><font color=\"#880000\">(< 1m ago, testing in progress)</font>";
+    }
     $table->addRow(array($oldest, $latest));
 
     return "<h2>Timestamps</h2>\n".$table->write();
