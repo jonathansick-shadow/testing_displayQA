@@ -103,6 +103,43 @@ function getActive() {
 }
 
 
+function writeTable_timestamps($group=".*") {
+
+    $i = 0;
+    $min = 0;
+    $max = 0;
+    $d = @dir(".");
+    while(false !== ($f = $d->read())) {
+	if (! is_dir($f) or ereg("^\.", $f)) { continue; }
+
+	if (! ereg("^test_$group", $f)) { continue; }
+	
+	$db = connect($f);
+	$cmd = "select min(entrytime),max(entrytime) from summary";
+	$prep = $db->prepare($cmd);
+	$prep->execute();
+	$results = $prep->fetchAll();
+	$result = $results[0];
+	if ($i == 0) {
+	    list($min,$max) = $result;
+	}
+
+	if ($result[0] < $min) { $min = $result[0]; }
+	if ($result[1] > $max) { $max = $result[1]; }
+
+	$i += 1;
+    }
+
+    $table = new Table("width=\"80%\"");
+    $table->addHeader(array("Oldest Entry", "Most Recent Entry"));
+    $oldest = date("Y-m-d H:i:s", $min);
+    $latest = date("Y-m-d H:i:s", $max);
+    $table->addRow(array($oldest, $latest));
+
+    return "<h2>Timestamps</h2>\n".$table->write();
+}
+
+
 function writeTable_ListOfTestResults() {
 
     $testDir = getDefaultTest();

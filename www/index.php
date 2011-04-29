@@ -11,5 +11,6 @@ include_once("libdisplay.php");
 $menu = new Menu();
 $page = new Page("LSST Pipetest", "LSST Pipe Test Summary", $menu);
 $page->appendContent(writeTable_SummarizeAllGroups());
+$page->addSidebar(writeTable_timestamps());
 
 echo $page;
