@@ -22,8 +22,8 @@ $ulNewData->addItem("Get checksums for your data directory. (see bin/writeTestDa
 $ulNewData->addItem("Add a class 'FooTestData' which inherits from TestData.");
 # class you include and error message to explain origin of data
 
-$page->appendContent("<h2>How To Add New Data</h2>\n");
-$page->appendContent($ulNewData->write());
+#$page->appendContent("<h2>How To Add New Data</h2>\n");
+#$page->appendContent($ulNewData->write());
 
 
 #######################################
@@ -32,8 +32,8 @@ $ulNewTest = new OrderedList();
 $ulNewTest->addItem("Add any new data as described above, but try to use existing data if possible.");
 $ulNewTest->addItem("Follow tests/psfPhotometry.py as an example.");
 
-$page->appendContent("<h2>How To Add a New Test</h2>\n");
-$page->appendContent($ulNewTest->write());
+#$page->appendContent("<h2>How To Add a New Test</h2>\n");
+#$page->appendContent($ulNewTest->write());
 
 ########################################
 # write the page

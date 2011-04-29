@@ -312,7 +312,9 @@ function writeMappedFigures($suffix="map") {
     $testDir = getDefaultTest();
 
     $active = getActive();
-    
+
+    $figNum = ($suffix=="map") ? 2 : 1;
+    $j = 0;
     $out = "";
     $d = @dir("$testDir");
     while(false !== ($f = $d->read())) {
@@ -354,11 +356,12 @@ function writeMappedFigures($suffix="map") {
 	    $img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
 	}
 	$img->addRow(array("<center><img src=\"$path\" usemap=\"#$base\"></center>"));
-	$img->addRow(array($result));
+	$img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));
 	$img->addRow(array("$f timestamp: $mtime"));
 	$out .= $img->write();
 	$out .= $mapString;
-	
+
+	$j += 1;
     }
     return $out;
 }
@@ -369,7 +372,8 @@ function writeFigures() {
     $testDir = getDefaultTest();
     $active = getActive();
     $d = @dir($testDir);
-	
+
+    $j = 0;
     $out = "";
     while( false !== ($f = $d->read())) {
     	if (! ereg(".(png|PNG|jpg|JPG)", $f)) { continue; }
@@ -399,9 +403,10 @@ function writeFigures() {
 	
 	$img = new Table();
 	$img->addRow(array("<center><img src=\"$path\"></center>"));
-	$img->addRow(array($result));
+	$img->addRow(array("<b>Figure 2.$j</b>:".$result));
 	$img->addRow(array("$f timestamp: $mtime"));
 	$out .= $img->write();
+	$j += 1;
     }
     
     return $out;
