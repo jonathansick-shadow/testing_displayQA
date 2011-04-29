@@ -357,10 +357,11 @@ function writeMappedFigures($suffix="map") {
 	}
 	$img->addRow(array("<center><img src=\"$path\" usemap=\"#$base\"></center>"));
 	$img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));
-	$img->addRow(array("$f timestamp: $mtime"));
+	$img->addRow(array("<b>$f</b>: timestamp=$mtime"));
 	$out .= $img->write();
 	$out .= $mapString;
-
+	$out .= "<br/>";
+	
 	$j += 1;
     }
     return $out;
@@ -404,8 +405,9 @@ function writeFigures() {
 	$img = new Table();
 	$img->addRow(array("<center><img src=\"$path\"></center>"));
 	$img->addRow(array("<b>Figure 2.$j</b>:".$result));
-	$img->addRow(array("$f timestamp: $mtime"));
+	$img->addRow(array("<b>$f</b>: timestamp=$mtime"));
 	$out .= $img->write();
+	$out .= "<br/>";
 	$j += 1;
     }
     
