@@ -22,6 +22,8 @@ class Page {
 
     public function __toString() {
 
+	$this->_logHit();
+	
 	# build the htmlheader
 	$s = $this->_docType();
 	$s .= $this->_htmlhead();
@@ -119,7 +121,22 @@ class Page {
 	}
 	return $out;
     }
-    
+
+
+    private function _logHit() {
+	$ip = $_SERVER['REMOTE_ADDR'];
+	$hostname = gethostbyaddr($ip);
+	$now = time();
+	$nowStr = date("Y-m-d H:i:s", $now);
+	$uri = $_SERVER['REQUEST_URI'];
+
+	$logfile = "site.log";
+	if (file_exists($logfile)) {
+	    $fp = fopen($logfile, 'w');
+	    fwrite($fp, "$nowStr $uri $ip $hostname\n");
+	    fclose($fp);
+	}
+    }
     	
   }
 
