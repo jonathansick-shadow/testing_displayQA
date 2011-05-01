@@ -132,7 +132,7 @@ class Page {
 
 	$logfile = "site.log";
 	if (file_exists($logfile)) {
-	    $fp = fopen($logfile, 'w');
+	    $fp = fopen($logfile, 'a');
 	    fwrite($fp, "$nowStr $uri $ip $hostname\n");
 	    fclose($fp);
 	}
