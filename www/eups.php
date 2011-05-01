@@ -8,7 +8,7 @@ include_once("Page.php");
 include_once("libdisplay.php");
 
 $menu = new Menu();
-$page = new Page("LSST Pipetest", "EUPS: setup products", $menu);
+$page = new Page(getDefaultTitle(), "EUPS: setup products", $menu);
 
 $page->appendContent(writeTable_EupsSetups());
 

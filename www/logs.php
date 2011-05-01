@@ -9,7 +9,7 @@ include_once("Page.php");
 include_once("libdisplay.php");
 
 $menu = new Menu();
-$page = new Page("LSST Pipetest", "Test Logs", $menu);
+$page = new Page(getDefaultTitle(), "Test Logs", $menu);
 $page->appendContent(writeTable_Logs());
 
 echo $page;

@@ -37,10 +37,13 @@ function hiLoColor($value, $lo, $hi) {
 function getCurrentUriDir() {
     $uri = $_SERVER['REQUEST_URI'];
     $dirs = preg_split("/\//", $uri);
-    $dir = $dirs[count($dirs)-2];
+    $dir = $dirs[count($dirs)-3];
     return $dir;
 }
 
+function getDefaultTitle() {
+    return getCurrentUriDir()." LSST-QA";
+}
 
 function verifyTest($value, $lo, $hi) {
     $pass = true;  # default true (ie. no limits were set)

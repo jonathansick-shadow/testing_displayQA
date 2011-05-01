@@ -9,7 +9,7 @@ include_once("libdisplay.php");
 
 # echo phpinfo();
 $menu = new Menu();
-$page = new Page("LSST Pipetest", "LSST Pipe Test Summary", $menu);
+$page = new Page(getDefaultTitle(), "LSST Pipe Test Summary", $menu);
 
 $group = getGroup();
 $page->appendContent("<h2>Group: $group</h2><br/>");

@@ -5,9 +5,10 @@ if (true) {
 }
 include_once("Menu.php");
 include_once("Page.php");
+include_once("libdisplay.php");
 
 $menu = new Menu();
-$page = new Page("LSST Pipetest", "LSST Pipe Test Help", $menu);
+$page = new Page(getDefaultTitle(), "LSST Pipe Test Help", $menu);
 
 
 # Now write the main help content page.

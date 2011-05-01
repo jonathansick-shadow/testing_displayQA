@@ -8,7 +8,7 @@ include_once("Page.php");
 include_once("libdisplay.php");
 
 $menu = new Menu();
-$page = new Page("LSST Pipetest", "LSST Pipe Test Summary", $menu);
+$page = new Page(getDefaultTitle(), "LSST Pipe Test Summary", $menu);
 
 $page->appendContent("<h2>".getDefaultTest()."</h2><br/>\n");
 $mapFigs = writeMappedFigures();

@@ -5,9 +5,10 @@ if (true) {
 }
 include_once("Menu.php");
 include_once("Page.php");
+include_once("libdisplay.php");
 
 $menu = new Menu();
-$page = new Page("LSST Pipetest", "SDQA Information", $menu);
+$page = new Page(getDefaultTitle(), "SDQA Information", $menu);
 $page->appendContent("Not Yet Implemented.\n");
 
 echo $page;

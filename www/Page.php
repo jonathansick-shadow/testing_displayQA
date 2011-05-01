@@ -106,6 +106,7 @@ class Page {
 	$s = "<head>\n".
 	    "<title>$title</title>\n".
 	    "<link rel=\"stylesheet\" type=\"text/css\" href=\"$css\" media=\"screen\" />\n".
+	    "<link rel=\"icon\" href=\"favicon.ico\" type=\"image/x-icon\" />\n".
 	    "</head>\n";
 	return $s;
     }
