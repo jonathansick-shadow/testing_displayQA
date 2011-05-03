@@ -62,12 +62,17 @@ function verifyTest($value, $lo, $hi) {
 
 function getDefaultTest() {
 
+    $testDir = "";
     if (array_key_exists('test', $_GET)) {
 	$testDir = $_GET['test'];
 	setcookie('displayQA_test', $testDir);
     } elseif (array_key_exists('displayQA_test', $_COOKIE)) {
 	$testDir = $_COOKIE['displayQA_test'];
-    } else {
+    }
+
+    # if it didn't get set, or if it doesn't exists (got deleted since cookie was set.
+    # ... use the first available test directory
+    if (strlen($testDir) == 0 or !file_exists($testDir)) {
 	$d = @dir(".");
 	while(false !== ($f = $d->read())) {
 	    if (ereg("test_", $f) and is_dir($f)) {
@@ -365,11 +370,17 @@ function writeMappedFigures($suffix="map") {
 	}
 	$mapString .= "</map>\n";
 
+	if (ereg(".tiff$", $path)) {
+	    $imgTag = "<object data=\"$path\" type=\"image/tiff\" usemap=\"#$base\"><param name=\"negative\" value=\"yes\"></object>";
+	} else {
+	    $imgTag = "<img src=\"$path\" usemap=\"#$base\">";
+	}
+	
 	$img = new Table();
 	if ($suffix == 'navmap') {
 	    $img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
 	}
-	$img->addRow(array("<center><img src=\"$path\" usemap=\"#$base\"></center>"));
+	$img->addRow(array("<center>$imgTag</center>"));
 	$img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));
 	$img->addRow(array("<b>$f</b>: timestamp=$mtime"));
 	$out .= $img->write();
@@ -415,9 +426,18 @@ function writeFigures() {
 	$prep = $db->prepare($cmd);
 	$prep->execute();
 	$result = $prep->fetchColumn();
+
+	# tiff must be handled specially
+	 
+	if (ereg(".tiff$", $path)) {
+	    # this doesn't work.  tiffs disabled for now.
+	    $imgTag = "<object data=\"$path\" type=\"image/tiff\"><param name=\"negative\" value=\"yes\"></object>";
+	} else {
+	    $imgTag = "<img src=\"$path\">";
+	}
 	
 	$img = new Table();
-	$img->addRow(array("<center><img src=\"$path\"></center>"));
+	$img->addRow(array("<center>$imgTag</center>"));
 	$img->addRow(array("<b>Figure 2.$j</b>:".$result));
 	$img->addRow(array("<b>$f</b>: timestamp=$mtime"));
 	$out .= $img->write();

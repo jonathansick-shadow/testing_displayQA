@@ -60,24 +60,6 @@ class TestSet(object):
             os.mkdir(self.wwwDir)
 
 
-        # create symlinks to the test-specific pages
-	if False:
-	    toLink = [
-		["summary.php",   "summary.php"],
-		["logs.php",      "logs.php"],
-		["sdqa.php",      "sdqa.php"],
-		["eups.php",      "eups.php"],
-		["redirect.php",  "index.php"],
-		["backtrace.php", "backtrace.php"],
-		]
-	    for pair in toLink:
-		srcFile = os.path.join("..", pair[0])
-		symlink = os.path.join(self.wwwDir, pair[1])
-		if not os.path.exists(symlink):
-		    #os.symlink(srcFile, symlink)
-		    pass
-
-                
         # connect to the db and create the tables
         self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
         self.conn = sqlite.connect(self.dbFile)
