@@ -3,6 +3,7 @@
 include_once("Html.php");
 include_once("libdb.php");
 
+date_default_timezone_set('America/New_York');
 
 ######################################
 # true/false color
