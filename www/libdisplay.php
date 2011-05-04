@@ -75,7 +75,7 @@ function getDefaultTest() {
     if (strlen($testDir) == 0 or !file_exists($testDir)) {
 	$d = @dir(".");
 	while(false !== ($f = $d->read())) {
-	    if (ereg("test_", $f) and is_dir($f)) {
+	    if (preg_match("/test_/", $f) and is_dir($f)) {
 		$testDir = $f;
 		break;
 	    }
@@ -91,7 +91,7 @@ function getActive() {
     $d = @dir("$testDir");
     $haveMaps = false;
     while(false !== ($f = $d->read())) {
-	if (ereg("\.(map|navmap)$", $f)) { $haveMaps = true; break; }
+	if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; break; }
     }
     
     # if there are .map files, the default is a *_all.png file
@@ -103,7 +103,7 @@ function getActive() {
     # get a value stored as a cookie, but not if the test changed (then use the default)
     } elseif (array_key_exists('displayQA_active', $_COOKIE) and (!array_key_exists('test', $_GET))) {
 	$active = $_COOKIE['displayQA_active'];
-	if ($haveMaps and ereg("\.\*", $active)) {
+	if ($haveMaps and preg_match("/\.\*/", $active)) {
 	    $active = "all";
 	}
     }
@@ -118,9 +118,9 @@ function writeTable_timestamps($group=".*") {
     $max = 0;
     $d = @dir(".");
     while(false !== ($f = $d->read())) {
-	if (! is_dir($f) or ereg("^\.", $f)) { continue; }
+	if (! is_dir($f) or preg_match("/^\./", $f)) { continue; }
 
-	if (! ereg("^test_$group", $f)) { continue; }
+	if (! preg_match("/^test_$group/", $f)) { continue; }
 	
 	$db = connect($f);
 	$cmd = "select min(entrytime),max(entrytime) from summary";
@@ -182,7 +182,7 @@ function writeTable_ListOfTestResults() {
 	list($test, $lo, $value, $hi, $comment) =
 	    array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
 
-	if (! ereg($active, $test) and ! ereg("all", $active)) { continue; }
+	if (! preg_match("/$active/", $test) and ! preg_match("/all/", $active)) { continue; }
 	
 	$pass = verifyTest($value, $lo, $hi);
 	if (!$lo) { $lo = "None"; }
@@ -331,12 +331,12 @@ function writeMappedFigures($suffix="map") {
     $out = "";
     $d = @dir("$testDir");
     while(false !== ($f = $d->read())) {
-    	if (! ereg(".(png|PNG|jpg|JPG)", $f)) { continue; }
+    	if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
 
 	$base = preg_replace("/\.(png|PNG|jpg|JPG)/", "", $f);
 	$mapfile = $base . "." . $suffix;
 
-	if (! ereg($active, $f) and $suffix != 'navmap') { continue; }
+	if (! preg_match("/$active/", $f) and $suffix != 'navmap') { continue; }
 
 	
 	# get the image path
@@ -358,7 +358,7 @@ function writeMappedFigures($suffix="map") {
 	$mapList = file($mapPath);
 	foreach($mapList as $line) {
 	    list($label, $x0, $y0, $x1, $y1, $info) = preg_split("/\s+/" ,$line);
-	    if (!ereg("^nolink:", $info)) {
+	    if (!preg_match("/^nolink:/", $info)) {
 		$href = "summary.php?active=$label";
 		$mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
 				      $x0, $y0, $x1, $y1, $href, $label." ".$info);
@@ -370,7 +370,7 @@ function writeMappedFigures($suffix="map") {
 	}
 	$mapString .= "</map>\n";
 
-	if (ereg(".tiff$", $path)) {
+	if (preg_match("/.tiff$/", $path)) {
 	    $imgTag = "<object data=\"$path\" type=\"image/tiff\" usemap=\"#$base\"><param name=\"negative\" value=\"yes\"></object>";
 	} else {
 	    $imgTag = "<img src=\"$path\" usemap=\"#$base\">";
@@ -402,9 +402,9 @@ function writeFigures() {
     $j = 0;
     $out = "";
     while( false !== ($f = $d->read())) {
-    	if (! ereg(".(png|PNG|jpg|JPG)", $f)) { continue; }
+    	if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
 
-	if (! ereg($active, $f)) { continue; }
+	if (! preg_match("/$active/", $f)) { continue; }
 
 	
 	# get the image path
@@ -429,7 +429,7 @@ function writeFigures() {
 
 	# tiff must be handled specially
 	 
-	if (ereg(".tiff$", $path)) {
+	if (preg_match("/.tiff$/", $path)) {
 	    # this doesn't work.  tiffs disabled for now.
 	    $imgTag = "<object data=\"$path\" type=\"image/tiff\"><param name=\"negative\" value=\"yes\"></object>";
 	} else {
@@ -521,11 +521,11 @@ function writeTable_SummarizeAllTests() {
     #while(false !== ($testDir = $d->read())) {
     foreach ($dirs as $testDir) {
 	# only interested in directories, but not . or ..
-	if ( ereg("^\.", $testDir) or ! is_dir("$testDir")) {
+	if ( preg_match("/^\./", $testDir) or ! is_dir("$testDir")) {
 	    continue;
 	}
 	# only interested in the group requested
-	if (! ereg("test_".$group, $testDir)) {
+	if (! preg_match("/test_".$group."/", $testDir)) {
 	    continue;
 	}
 
@@ -606,7 +606,7 @@ function writeTable_SummarizeAllGroups() {
 	$d = @dir($dir) or dir("");
 	#while(false !== ($testDir = $d->read())) {
 	foreach ($dirs as $testDir) {
-	    if (!ereg("test_".$group, $testDir)) {
+	    if (!preg_match("/test_".$group."/", $testDir)) {
 		continue;
 	    }
 	    # must deal with default group "" specially
@@ -705,7 +705,7 @@ function writeTable_Logs() {
 	    # check for tracebacks from TestData
 	    $module = $log['module'];
 	    $msg = $log['message'];
-	    if (ereg("testQA.TestData$", $module)) {
+	    if (preg_match("/testQA.TestData$/", $module)) {
 		# get the idString from the message
 		$idString = preg_replace("/:.*/", "", $msg);
 		$module .= " <a href=\"backtrace.php?label=$idString\">Backtrace</a>";

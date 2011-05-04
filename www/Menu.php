@@ -34,7 +34,7 @@ class Menu {
 	    list($label, $path) = $this->_tabs[$key];
 	    $path = preg_replace("/.*\//", "", $path);
 	    $selected[$key] = false;
-	    if ($path and ereg($path, $uri)) {
+	    if ($path and preg_match("/$path/", $uri)) {
 		$selected[$key] =  true;
 		$found = true;
 	    }
