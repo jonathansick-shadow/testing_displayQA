@@ -312,9 +312,9 @@ function writeTable_OneTestResult($label) {
     global $dbFile;
     #$mtime = date("Y-m_d H:i:s", filemtime("$testDir/$dbFile"));
     $db = connect($testDir);
-    $cmd = "select * from summary where label='$label'";
+    $cmd = "select * from summary where label = ?";
     $prep = $db->prepare($cmd);
-    $prep->execute();
+    $prep->execute(array($label));
     $result = $prep->fetchAll();
     
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
@@ -355,9 +355,9 @@ function write_OneBacktrace($label) {
     
     global $dbFile;
     $db = connect($testDir);
-    $cmd = "select * from summary where label='$label'";
+    $cmd = "select * from summary where label = ?";
     $prep = $db->prepare($cmd);
-    $prep->execute();
+    $prep->execute(array($label));
     $result = $prep->fetchAll();
 
     $backtrace = "";
@@ -436,9 +436,9 @@ function writeMappedFigures($suffix="map") {
 	
 	# get the caption
 	$db = connect($testDir);
-	$cmd = "select caption from figure where filename = '$f'";
+	$cmd = "select caption from figure where filename = ?";
 	$prep = $db->prepare($cmd);
-	$prep->execute();
+	$prep->execute(array($f));
 	$result = $prep->fetchColumn();
 
 	# load the map
@@ -510,9 +510,9 @@ function writeFigures() {
 
 	# get the caption
 	$db = connect($testDir);
-	$cmd = "select caption from figure where filename = '$f'";
+	$cmd = "select caption from figure where filename = ?";
 	$prep = $db->prepare($cmd);
-	$prep->execute();
+	$prep->execute(array($f));
 	$result = $prep->fetchColumn();
 
 	# tiff must be handled specially
@@ -743,9 +743,9 @@ function writeTable_Logs() {
 	$name = $dbtable['name'];
 	$ul->addItem("<a href=\"#$name\">$name</a>");
 	
-	$cmd = "select * from $name";
+	$cmd = "select * from ?";
 	$prep = $db->prepare($cmd);
-	$prep->execute();
+	$prep->execute(array($name));
 	$logs = $prep->fetchAll();
 
 	$tables .= "<h2 id=\"$name\">$name</h2><br/>";
@@ -800,9 +800,9 @@ function writeTable_EupsSetups() {
 	$name = $dbtable['name'];
 	$ul->addItem("<a href=\"#$name\">$name</a>");
 	
-	$cmd = "select * from $name";
+	$cmd = "select * from ?";
 	$prep = $db->prepare($cmd);
-	$prep->execute();
+	$prep->execute(array($name));
 	$logs = $prep->fetchAll();
 
 	$tables .= "<h2 id=\"$name\">$name</h2><br/>";
