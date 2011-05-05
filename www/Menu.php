@@ -24,7 +24,7 @@ class Menu {
     
     public function __toString() {
 
-	$uri = $_SERVER['REQUEST_URI'];
+	$uri = $_SERVER['SCRIPT_NAME'];
 	
 	## need to determine which page we're on
 	## so we can highlight the appropriate tab

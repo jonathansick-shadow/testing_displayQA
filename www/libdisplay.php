@@ -36,9 +36,7 @@ function hiLoColor($value, $lo, $hi) {
 #
 #######################################
 function getCurrentUriDir() {
-    $uri = $_SERVER['REQUEST_URI'];
-    # strip off any $_GET variables
-    $uri = preg_replace("/^([^\?]+)\?.*/", "$1", $uri);
+    $uri = $_SERVER['SCRIPT_NAME'];
     $dirs = preg_split("/\//", $uri);
     $dir = $dirs[count($dirs)-3];
     return $dir;
