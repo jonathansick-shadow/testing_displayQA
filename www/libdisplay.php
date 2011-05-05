@@ -116,6 +116,57 @@ function getActive() {
 }
 
 
+####################################################
+# groups
+####################################################
+function getGroupList() {
+    $dir = "./";
+    $groups = array();
+    $d = @dir($dir) or dir("");
+    while(false !== ($testDir = $d->read())) {
+	$parts = preg_split("/_/", $testDir);
+
+	if (count($parts) > 2) {
+	    $group = $parts[1];
+	} else {
+	    $group = "";
+	}
+	
+	if (array_key_exists($group, $groups)) {
+	    $groups[$group] += 1;
+	} else {
+	    $groups[$group] = 1;
+	}
+    }
+    ksort($groups);
+    return $groups;
+}
+function getGroup() {
+   if (array_key_exists('group', $_GET)) {
+	$group = $_GET['group'];
+	setcookie('displayQA_group', $group);
+   } elseif (array_key_exists('displayQA_group', $_COOKIE)) {
+       $group = $_COOKIE['displayQA_group'];
+   } else {
+       $group = "";
+   }
+
+   $allGroups = array_keys(getGroupList());
+   # if we don't have the group, default to ""
+   if (strlen($group) > 0 and ! in_array($group, $allGroups)) {
+       $group = "";
+   }
+   
+   return $group;
+}
+
+
+
+
+
+####################################################
+#
+####################################################
 function writeTable_timestamps($group=".*") {
 
     $i = 0;
@@ -158,6 +209,10 @@ function writeTable_timestamps($group=".*") {
 }
 
 
+
+####################################################
+#
+####################################################
 function writeTable_ListOfTestResults() {
 
     $testDir = getDefaultTest();
@@ -325,6 +380,12 @@ function writeTable_metadata() {
 
 
 
+####################################################
+#
+# Figures
+#
+####################################################
+ 
 function writeMappedFigures($suffix="map") {
 
     $testDir = getDefaultTest();
@@ -459,6 +520,9 @@ function displayFigures($testDir) {
 
 
 
+
+
+
 function summarizeTest($testDir) {
     $summary = array();
 
@@ -494,17 +558,9 @@ function summarizeTest($testDir) {
 }
 
 
-function getGroup() {
-   if (array_key_exists('group', $_GET)) {
-	$group = $_GET['group'];
-	setcookie('displayQA_group', $group);
-    } elseif (array_key_exists('displayQA_group', $_COOKIE)) {
-	$group = $_COOKIE['displayQA_group'];
-    } else {
-	$group = "";
-    }
-   return $group;
-}
+
+
+
 
 function writeTable_SummarizeAllTests() {
     $dir = "./";
@@ -561,28 +617,6 @@ function writeTable_SummarizeAllTests() {
     }
     return $table->write();
     
-}
-function getGroupList() {
-    $dir = "./";
-    $groups = array();
-    $d = @dir($dir) or dir("");
-    while(false !== ($testDir = $d->read())) {
-	$parts = preg_split("/_/", $testDir);
-
-	if (count($parts) > 2) {
-	    $group = $parts[1];
-	} else {
-	    $group = "";
-	}
-	
-	if (array_key_exists($group, $groups)) {
-	    $groups[$group] += 1;
-	} else {
-	    $groups[$group] = 1;
-	}
-    }
-    ksort($groups);
-    return $groups;
 }
 
 function writeTable_SummarizeAllGroups() {
@@ -657,25 +691,16 @@ function writeTable_SummarizeAllGroups() {
     
 }
 
-#function writeTable_SummarizeAllGroups() {
-#    $groups = getGroupList();
-#    $tables = "";
-#    foreach ($groups as $group=>$n) {
-#	if ($group == "") {
-#	    $tables .= "<br/><h2>Top level tests</h2><br/>\n";
-#	} else {
-#	    $tables .= "<br/><h2>Test groups</h2><br/>\n";
-#	}
-#	$tables .= writeTable_SummarizeAllTests($group);
-#    }
-#    return $tables;
-#}
-
 function displayTable_SummarizeAllTests() {
     echo writeTable_SummarizeAllTests($group);
 }
 
 
+
+
+####################################################
+# Logs
+####################################################
 
 function writeTable_Logs() {
 
@@ -728,6 +753,12 @@ function displayTable_Logs() {
 }
 
 
+
+
+####################################################
+# EUPS
+####################################################
+ 
 function writeTable_EupsSetups() {
 
     $testDir = getDefaultTest();

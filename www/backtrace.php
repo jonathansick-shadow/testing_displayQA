@@ -8,7 +8,7 @@ include_once("Page.php");
 include_once("libdisplay.php");
 
 $menu = new SpecificTestMenu();
-$page = new Page("LSST Pipetest", getDefaultH1(), $menu);
+$page = new Page(getDefaultTitle(), getDefaultH1(), $menu);
 
 $page->appendContent("<h2>".getCurrentUriDir()."</h2><br/>\n");
 $page->appendContent(writeTable_OneTestResult($_GET['label']) . "<br/>\n");
