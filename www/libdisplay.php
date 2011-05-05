@@ -37,6 +37,8 @@ function hiLoColor($value, $lo, $hi) {
 #######################################
 function getCurrentUriDir() {
     $uri = $_SERVER['REQUEST_URI'];
+    # strip off any $_GET variables
+    $uri = preg_replace("/^([^\?]+)\?.*/", "$1", $uri);
     $dirs = preg_split("/\//", $uri);
     $dir = $dirs[count($dirs)-3];
     return $dir;
@@ -93,25 +95,45 @@ function getDefaultTest() {
 function getActive() {
 
     $testDir = getDefaultTest();
+
+
+    # see if there are maps associated with this
     $d = @dir("$testDir");
     $haveMaps = false;
+    $navmapFile = "";
     while(false !== ($f = $d->read())) {
+	if (preg_match("/\.navmap/", $f)) {$navmapFile =  "$testDir/$f";}
 	if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; break; }
+    }
+
+    # validation list from the navmap file
+    # ... a bit excessive to read the whole file, but it should only contain max ~100 entries.
+    $validActive = array("all", ".*");
+    if (strlen($navmapFile) > 0) {
+	$lines = file($navmapFile);
+	foreach ($lines as $line) {
+	    $arr = preg_split("/\s+/", $line);
+	    $validActive[] = $arr[0];
+	}
     }
     
     # if there are .map files, the default is a *_all.png file
     $active = $haveMaps ? "all" : ".*";
-    if (array_key_exists('active', $_GET)) {
+    if (array_key_exists('active', $_GET) and in_array($_GET['active'], $validActive)) {
 	$active = $_GET['active'];
 	setcookie('displayQA_active', $active);
 
     # get a value stored as a cookie, but not if the test changed (then use the default)
-    } elseif (array_key_exists('displayQA_active', $_COOKIE) and (!array_key_exists('test', $_GET))) {
+    } elseif (array_key_exists('displayQA_active', $_COOKIE) and
+	      (in_array($_COOKIE['displayQA_active'], $validActive)) and 
+	      (!array_key_exists('test', $_GET))) {
 	$active = $_COOKIE['displayQA_active'];
 	if ($haveMaps and preg_match("/\.\*/", $active)) {
 	    $active = "all";
 	}
     }
+
+    
     return $active;    
 }
 
