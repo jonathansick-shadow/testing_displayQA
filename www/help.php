@@ -8,7 +8,7 @@ include_once("Page.php");
 include_once("libdisplay.php");
 
 $menu = new Menu();
-$page = new Page(getDefaultTitle(), "LSST Pipe Test Help", $menu);
+$page = new Page(getDefaultTitle(), "Help", $menu);
 
 
 # Now write the main help content page.

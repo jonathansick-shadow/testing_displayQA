@@ -43,7 +43,11 @@ function getCurrentUriDir() {
 }
 
 function getDefaultTitle() {
-    return getCurrentUriDir()." LSST-QA";
+    return getCurrentUriDir()." pipeQA";
+}
+
+function getDefaultH1() {
+    return "Q.A. Test Summary";
 }
 
 function verifyTest($value, $lo, $hi) {

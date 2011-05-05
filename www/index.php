@@ -8,7 +8,7 @@ include_once("Page.php");
 include_once("libdisplay.php");
 
 $menu = new Menu();
-$page = new Page(getDefaultTitle(), "LSST Pipe Test Summary", $menu);
+$page = new Page(getDefaultTitle(), getDefaultH1(), $menu);
 $page->appendContent(writeTable_SummarizeAllGroups());
 $page->addSidebar(writeTable_timestamps());
 

@@ -81,7 +81,7 @@ class Page {
 
 	# create the list of links
 	$ul = new UnorderedList();
-	$ul->addItem("<a href=\"http://lsstcorp.org\">LSST Home</a>");
+	#$ul->addItem("<a href=\"http://lsstcorp.org\">LSST Home</a>");
 
 	$this->addSidebar($ul->write(), "Links: ");
     }
