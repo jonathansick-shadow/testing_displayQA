@@ -442,31 +442,52 @@ function writeMappedFigures($suffix="map") {
 	# load the map
 	$mapString = "<map id=\"$base\" name=\"$base\">\n";
 	$mapList = file($mapPath);
+	$activeArea = array(0.0, 0.0, 0.0, 0.0);
 	foreach($mapList as $line) {
 	    list($label, $x0, $y0, $x1, $y1, $info) = preg_split("/\s+/" ,$line);
-	    if (!preg_match("/^nolink:/", $info)) {
-		$href = "summary.php?active=$label";
-		$mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
-				      $x0, $y0, $x1, $y1, $href, $label." ".$info);
-	    } else {
+	    if ( preg_match("/$active/", $label) ) {
+		$activeArea = array($x0, $y0, $x1, $y1);
+	    }
+	    if (preg_match("/^nolink:/", $info)) {
 		$info = preg_replace("/^nolink:/", "", $info);
 		$mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" title=\"%s\">\n",
 				      $x0, $y0, $x1, $y1, $info);
+	    } else {
+		$href = "summary.php?active=$label";
+		$mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
+				      $x0, $y0, $x1, $y1, $href, $label." ".$info);
 	    }
 	}
 	$mapString .= "</map>\n";
 
-	if (preg_match("/.tiff$/", $path)) {
-	    $imgTag = "<object data=\"$path\" type=\"image/tiff\" usemap=\"#$base\"><param name=\"negative\" value=\"yes\"></object>";
-	} else {
-	    $imgTag = "<img src=\"$path\" usemap=\"#$base\">";
+
+	# make the img tag and wrap it in a highlighted div
+	$imgDiv = new Div("style=\"position: relative;\"");
+	list($x0, $y0, $x1, $y1) = $activeArea;
+	# not sure why these are too big ...
+	$dx = 0.8*(intval($x1) - intval($x0));
+	$dy = 0.8*(intval($y1) - intval($y0));
+
+	$hiliteColor = "#00ff00";
+	if ($suffix == "navmap") {
+	    $hilightDiv = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor 2px solid; z-index: 0;\" align=\"center\"");
+	    $imgDiv->append($hilightDiv->write());
 	}
+
+	if (preg_match("/.tiff$/", $path)) {
+	    $imgTag = "<object data=\"$path\" type=\"image/tiff\" usemap=\"#$base\"><param name=\"negative\" value=\"yes\"></object>\n";
+	} else {
+	    $imgTag = "<img src=\"$path\" usemap=\"#$base\">\n";
+	}
+
+	$imgDiv->append($imgTag);
+
 	
 	$img = new Table();
 	if ($suffix == 'navmap') {
 	    $img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
 	}
-	$img->addRow(array("<center>$imgTag</center>"));
+	$img->addRow(array("<center>".$imgDiv->write()."</center>"));
 	$img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));
 	$img->addRow(array("<b>$f</b>: timestamp=$mtime"));
 	$out .= $img->write();
