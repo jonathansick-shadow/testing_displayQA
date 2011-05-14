@@ -468,10 +468,15 @@ function writeMappedFigures($suffix="map") {
 	$dx = 0.8*(intval($x1) - intval($x0));
 	$dy = 0.8*(intval($y1) - intval($y0));
 
-	$hiliteColor = "#00ff00";
-	if ($suffix == "navmap") {
-	    $hilightDiv = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor 2px solid; z-index: 0;\" align=\"center\"");
-	    $imgDiv->append($hilightDiv->write());
+	$hiliteColor2 = "magenta"; #"#00ff00";
+	$hiliteColor1 = "#00ff00";
+	if ($suffix == "navmap" and $x0 > 0 and $y0 > 0) {
+	    $wid = 2;
+	    $hilightDiv1 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor1 ${wid}px solid; z-index: 0;\" align=\"center\"");
+	    list($x0, $y0, $dx, $dy) = array($x0 + $wid, $y0 + $wid, $dx-2*$wid, $dy-2*$wid);
+	    $hilightDiv2 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor2 ${wid}px solid; z-index: 0;\" align=\"center\"");
+	    $imgDiv->append($hilightDiv1->write());
+	    $imgDiv->append($hilightDiv2->write());
 	}
 
 	if (preg_match("/.tiff$/", $path)) {
