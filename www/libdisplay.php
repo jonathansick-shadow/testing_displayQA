@@ -20,12 +20,14 @@ function tfColor($string, $tf) {
 
 function hiLoColor($value, $lo, $hi) {
     $fvalue = floatval($value);
-    if ($fvalue >= $lo and $fvalue <=$hi) {
+    if ((!$lo or $fvalue >= $lo) and (!$hi or $fvalue <=$hi)) {
 	$colorout = "<font color=\"#00aa00\">$value</font>";
-    } elseif ($fvalue < $lo) {
+    } elseif ($lo and $fvalue < $lo) {
 	$colorout = "<font color=\"#000088\">$value</font>";
-    } elseif ($fvalue > $hi) {
+    } elseif ($hi and $fvalue > $hi) {
 	$colorout = "<font color=\"#880000\">$value</font>";
+    } else {
+	$colorout = "$value";
     }
     return $colorout;
 }
@@ -51,6 +53,7 @@ function getDefaultH1() {
 }
 
 function verifyTest($value, $lo, $hi) {
+    
     $pass = true;  # default true (ie. no limits were set)
     if ($lo and $hi) {
 	$pass = ($value >= $lo and $value <=$hi);
@@ -262,19 +265,20 @@ function writeTable_ListOfTestResults() {
 	list($test, $lo, $value, $hi, $comment) =
 	    array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
 
+	if (preg_match("/NaN/", $lo)) { $lo = NULL; }
+	if (preg_match("/NaN/", $hi)) { $hi = NULL; }
+	
 	if (! preg_match("/$active/", $test) and ! preg_match("/all/", $active)) { continue; }
 	
 	$pass = verifyTest($value, $lo, $hi);
-	if (!$lo) { $lo = "None"; }
-	if (!$hi) { $hi = "None"; }
 	
 	if (!$pass) {
 	    $test .= " <a href=\"backtrace.php?label=$test\">Backtrace</a>";
 	}
 	$mtime = date("Y-m_d H:i:s", $r['entrytime']);
 
-	$loStr = sprintf("%.3f", $lo);
-	$hiStr = sprintf("%.3f", $hi);
+	$loStr = $lo ? sprintf("%.3f", $lo) : "None";
+	$hiStr = $hi ? sprintf("%.3f", $hi) : "None";
 	$valueStr = sprintf("%.3f", $value);
 
 	$table->addRow(array($test, $mtime,
@@ -465,8 +469,8 @@ function writeMappedFigures($suffix="map") {
 	$imgDiv = new Div("style=\"position: relative;\"");
 	list($x0, $y0, $x1, $y1) = $activeArea;
 	# not sure why these are too big ...
-	$dx = 0.8*(intval($x1) - intval($x0));
-	$dy = 0.8*(intval($y1) - intval($y0));
+	$dx = 1.0*(intval($x1) - intval($x0));
+	$dy = 1.0*(intval($y1) - intval($y0));
 
 	$hiliteColor2 = "magenta"; #"#00ff00";
 	$hiliteColor1 = "#00ff00";
