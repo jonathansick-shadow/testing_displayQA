@@ -17,8 +17,18 @@ class TestFailError(Exception):
     
     
 class Test(object):
+    """A class to verify some condition is met.
+    """
 
     def __init__(self, label, value, limits, comment, areaLabel=None):
+        """
+        @param label      A name for this test
+        @param value      Value to be tested
+        @param limits     A list [min, max] specifying range of acceptable values (inclusive).
+        @param comment    A comment with extra info about the test
+	@param areaLabel  [optional] Label associating this test with a mapped area in a figure.
+        """
+	
         self.label = label
         if not areaLabel is None:
             self.label += "-"+areaLabel
@@ -30,7 +40,7 @@ class Test(object):
         return self.label+" "+str(self.evaluate())+" value="+str(self.value)+" limits="+str(self.limits)
 
     def evaluate(self):
-        """Add a test to this testing suite."""
+        """Verify that our value is within our limits."""
         
         # grab a traceback for failed tests
         if (self.value < self.limits[0] or self.value > self.limits[1]):
@@ -40,9 +50,14 @@ class Test(object):
 
 
 class TestSet(object):
+    """A container for Test objects and associated matplotlib figures."""
     
     def __init__(self, label=None, group=""):
-        """Constructor to create a TestSet object for a new suite of tests."""
+        """
+        @param label  A name for this testSet
+        @param group  A category this testSet belongs to
+        """
+
 
         self.conn = None
 
@@ -134,7 +149,10 @@ class TestSet(object):
             
         
     def addTest(self, *args, **kwargs):
-        """Add a test to this testing suite."""
+        """Add a test to this testing suite.
+
+        @param *args  Either a Test object, or the arguments to create one
+        """
 
         if len(args) >= 4:
             test = Test(*args, **kwargs)
@@ -162,6 +180,10 @@ class TestSet(object):
 
 
     def addMetadata(self, *args):
+        """Associate metadata with this TestSet
+
+	@param *args A dict of key,value pairs, or a key and value
+	"""
 
         def addOneKvPair(k, v):
             keys = [x.split()[0] for x in self.tables[self.metaTable]]
@@ -179,6 +201,7 @@ class TestSet(object):
         
     def importExceptionDict(self, exceptDict):
         """Given a dictionary of exceptions from TestData object, add the entries to the db."""
+	
         keys = sorted(exceptDict.keys())
         for key in keys:
             tablekeys = [x.split()[0] for x in self.tables[self.summTable]]
@@ -187,7 +210,15 @@ class TestSet(object):
 
         
     def addFigure(self, fig, filename, caption, areaLabel=None, navMap=False):
-        """Add a figure to this test suite."""
+        """Add a figure to this test suite.
+        
+        @param fig      a matplotlib figure
+        @param filename The basename of the figure.
+        @param caption  text describing the figure
+	@param areaLabel a string associating the figure with a map area in a navigation figure
+	@param navMap    Identify this figure as a navigation map figure containing linked map areas.
+        """
+
         path = os.path.join(self.wwwDir, filename)
 
         # sub in the areaLabel, if given
