@@ -21,13 +21,13 @@ function tfColor($string, $tf) {
 function hiLoColor($value, $lo, $hi) {
     $fvalue = floatval($value);
     if ((!$lo or $fvalue >= $lo) and (!$hi or $fvalue <=$hi)) {
-	$colorout = "<font color=\"#00aa00\">$value</font>";
+        $colorout = "<font color=\"#00aa00\">$value</font>";
     } elseif ($lo and $fvalue < $lo) {
-	$colorout = "<font color=\"#000088\">$value</font>";
+        $colorout = "<font color=\"#000088\">$value</font>";
     } elseif ($hi and $fvalue > $hi) {
-	$colorout = "<font color=\"#880000\">$value</font>";
+        $colorout = "<font color=\"#880000\">$value</font>";
     } else {
-	$colorout = "$value";
+        $colorout = "$value";
     }
     return $colorout;
 }
@@ -56,13 +56,13 @@ function verifyTest($value, $lo, $hi) {
     
     $pass = true;  # default true (ie. no limits were set)
     if ($lo and $hi) {
-	$pass = ($value >= $lo and $value <=$hi);
+        $pass = ($value >= $lo and $value <=$hi);
     }
     if ($lo and !$hi) {
-	$pass = ($value >= $lo);
+        $pass = ($value >= $lo);
     }
     if (!$lo and $hi) {
-	$pass = ($value <= $hi);
+        $pass = ($value <= $hi);
     }
     return $pass;
 }
@@ -72,22 +72,22 @@ function getDefaultTest() {
 
     $testDir = "";
     if (array_key_exists('test', $_GET)) {
-	$testDir = $_GET['test'];
-	setcookie('displayQA_test', $testDir);
+        $testDir = $_GET['test'];
+        setcookie('displayQA_test', $testDir);
     } elseif (array_key_exists('displayQA_test', $_COOKIE)) {
-	$testDir = $_COOKIE['displayQA_test'];
+        $testDir = $_COOKIE['displayQA_test'];
     }
 
     # if it didn't get set, or if it doesn't exists (got deleted since cookie was set.
     # ... use the first available test directory
     if (strlen($testDir) == 0 or !file_exists($testDir)) {
-	$d = @dir(".");
-	while(false !== ($f = $d->read())) {
-	    if (preg_match("/test_/", $f) and is_dir($f)) {
-		$testDir = $f;
-		break;
-	    }
-	}
+        $d = @dir(".");
+        while(false !== ($f = $d->read())) {
+            if (preg_match("/test_/", $f) and is_dir($f)) {
+                $testDir = $f;
+                break;
+            }
+        }
     }
     return $testDir;
 }
@@ -103,35 +103,35 @@ function getActive() {
     $haveMaps = false;
     $navmapFile = "";
     while(false !== ($f = $d->read())) {
-	if (preg_match("/\.navmap/", $f)) {$navmapFile =  "$testDir/$f";}
-	if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; break; }
+        if (preg_match("/\.navmap/", $f)) {$navmapFile =  "$testDir/$f";}
+        if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; break; }
     }
 
     # validation list from the navmap file
     # ... a bit excessive to read the whole file, but it should only contain max ~100 entries.
     $validActive = array("all", ".*");
     if (strlen($navmapFile) > 0) {
-	$lines = file($navmapFile);
-	foreach ($lines as $line) {
-	    $arr = preg_split("/\s+/", $line);
-	    $validActive[] = $arr[0];
-	}
+        $lines = file($navmapFile);
+        foreach ($lines as $line) {
+            $arr = preg_split("/\s+/", $line);
+            $validActive[] = $arr[0];
+        }
     }
     
     # if there are .map files, the default is a *_all.png file
     $active = $haveMaps ? "all" : ".*";
     if (array_key_exists('active', $_GET) and in_array($_GET['active'], $validActive)) {
-	$active = $_GET['active'];
-	setcookie('displayQA_active', $active);
+        $active = $_GET['active'];
+        setcookie('displayQA_active', $active);
 
     # get a value stored as a cookie, but not if the test changed (then use the default)
     } elseif (array_key_exists('displayQA_active', $_COOKIE) and
-	      (in_array($_COOKIE['displayQA_active'], $validActive)) and 
-	      (!array_key_exists('test', $_GET))) {
-	$active = $_COOKIE['displayQA_active'];
-	if ($haveMaps and preg_match("/\.\*/", $active)) {
-	    $active = "all";
-	}
+              (in_array($_COOKIE['displayQA_active'], $validActive)) and 
+              (!array_key_exists('test', $_GET))) {
+        $active = $_COOKIE['displayQA_active'];
+        if ($haveMaps and preg_match("/\.\*/", $active)) {
+            $active = "all";
+        }
     }
 
     
@@ -147,27 +147,27 @@ function getGroupList() {
     $groups = array();
     $d = @dir($dir) or dir("");
     while(false !== ($testDir = $d->read())) {
-	$parts = preg_split("/_/", $testDir);
+        $parts = preg_split("/_/", $testDir);
 
-	if (count($parts) > 2) {
-	    $group = $parts[1];
-	} else {
-	    $group = "";
-	}
-	
-	if (array_key_exists($group, $groups)) {
-	    $groups[$group] += 1;
-	} else {
-	    $groups[$group] = 1;
-	}
+        if (count($parts) > 2) {
+            $group = $parts[1];
+        } else {
+            $group = "";
+        }
+        
+        if (array_key_exists($group, $groups)) {
+            $groups[$group] += 1;
+        } else {
+            $groups[$group] = 1;
+        }
     }
     ksort($groups);
     return $groups;
 }
 function getGroup() {
    if (array_key_exists('group', $_GET)) {
-	$group = $_GET['group'];
-	setcookie('displayQA_group', $group);
+        $group = $_GET['group'];
+        setcookie('displayQA_group', $group);
    } elseif (array_key_exists('displayQA_group', $_COOKIE)) {
        $group = $_COOKIE['displayQA_group'];
    } else {
@@ -197,24 +197,24 @@ function writeTable_timestamps($group=".*") {
     $max = 0;
     $d = @dir(".");
     while(false !== ($f = $d->read())) {
-	if (! is_dir($f) or preg_match("/^\./", $f)) { continue; }
+        if (! is_dir($f) or preg_match("/^\./", $f)) { continue; }
 
-	if (! preg_match("/^test_$group/", $f)) { continue; }
-	
-	$db = connect($f);
-	$cmd = "select min(entrytime),max(entrytime) from summary";
-	$prep = $db->prepare($cmd);
-	$prep->execute();
-	$results = $prep->fetchAll();
-	$result = $results[0];
-	if ($i == 0) {
-	    list($min,$max) = $result;
-	}
+        if (! preg_match("/^test_$group/", $f)) { continue; }
+        
+        $db = connect($f);
+        $cmd = "select min(entrytime),max(entrytime) from summary";
+        $prep = $db->prepare($cmd);
+        $prep->execute();
+        $results = $prep->fetchAll();
+        $result = $results[0];
+        if ($i == 0) {
+            list($min,$max) = $result;
+        }
 
-	if ($result[0] < $min) { $min = $result[0]; }
-	if ($result[1] > $max) { $max = $result[1]; }
+        if ($result[0] < $min) { $min = $result[0]; }
+        if ($result[1] > $max) { $max = $result[1]; }
 
-	$i += 1;
+        $i += 1;
     }
 
     $table = new Table("width=\"80%\"");
@@ -224,7 +224,7 @@ function writeTable_timestamps($group=".*") {
     $latest = date("Y-m-d H:i:s", $max);
 
     if ($now - $max < 120) {
-	$latest .= "<br/><font color=\"#880000\">(< 2m ago, testing in progress)</font>";
+        $latest .= "<br/><font color=\"#880000\">(< 2m ago, testing in progress)</font>";
     }
     $table->addRow(array($oldest, $latest));
 
@@ -245,9 +245,9 @@ function writeTable_ListOfTestResults() {
 
     $headAttribs = array("align=\"center\"");
     $table->addHeader(
-	array("Label", "Timestamp", "Value", "Limits", "Comment"),
-	$headAttribs
-	);
+        array("Label", "Timestamp", "Value", "Limits", "Comment"),
+        $headAttribs
+        );
 
     global $dbFile;
 
@@ -257,32 +257,32 @@ function writeTable_ListOfTestResults() {
     $prep = $db->prepare($cmd);
     $prep->execute();
     $result = $prep->fetchAll();
-	
+        
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
-		       "align=\"right\"", "align=\"center\"",
-		       "align=\"left\" width=\"200\"");
+                       "align=\"right\"", "align=\"center\"",
+                       "align=\"left\" width=\"200\"");
     foreach ($result as $r) {
-	list($test, $lo, $value, $hi, $comment) =
-	    array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
+        list($test, $lo, $value, $hi, $comment) =
+            array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
 
-	if (preg_match("/NaN/", $lo)) { $lo = NULL; }
-	if (preg_match("/NaN/", $hi)) { $hi = NULL; }
-	
-	if (! preg_match("/$active/", $test) and ! preg_match("/all/", $active)) { continue; }
-	
-	$pass = verifyTest($value, $lo, $hi);
-	
-	if (!$pass) {
-	    $test .= " <a href=\"backtrace.php?label=$test\">Backtrace</a>";
-	}
-	$mtime = date("Y-m_d H:i:s", $r['entrytime']);
+        if (preg_match("/NaN/", $lo)) { $lo = NULL; }
+        if (preg_match("/NaN/", $hi)) { $hi = NULL; }
+        
+        if (! preg_match("/$active/", $test) and ! preg_match("/all/", $active)) { continue; }
+        
+        $pass = verifyTest($value, $lo, $hi);
+        
+        if (!$pass) {
+            $test .= " <a href=\"backtrace.php?label=$test\">Backtrace</a>";
+        }
+        $mtime = date("Y-m_d H:i:s", $r['entrytime']);
 
-	$loStr = $lo ? sprintf("%.3f", $lo) : "None";
-	$hiStr = $hi ? sprintf("%.3f", $hi) : "None";
-	$valueStr = sprintf("%.3f", $value);
+        $loStr = $lo ? sprintf("%.3f", $lo) : "None";
+        $hiStr = $hi ? sprintf("%.3f", $hi) : "None";
+        $valueStr = sprintf("%.3f", $value);
 
-	$table->addRow(array($test, $mtime,
-			     hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
+        $table->addRow(array($test, $mtime,
+                             hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
     }
     $db = NULL;
     return $table->write();
@@ -299,16 +299,16 @@ function writeTable_OneTestResult($label) {
     $testDir = getDefaultTest();
     
     if (empty($label)) {
-	return "<h2>No test label specified. Cannot display test result.</h2><br/>\n";
+        return "<h2>No test label specified. Cannot display test result.</h2><br/>\n";
     }
     
     $table = new Table("width=\"90%\"");
     
     $headAttribs = array("align=\"center\"");
     $table->addHeader(
-	array("Label", "Timestamp", "Value", "Limits", "Comment"),
-	$headAttribs
-	);
+        array("Label", "Timestamp", "Value", "Limits", "Comment"),
+        $headAttribs
+        );
     #$table->addHeader(array("Label", "Timestamp", "LowerLimit", "Value", "UpperLimit", "Comment"));
 
     global $dbFile;
@@ -320,27 +320,27 @@ function writeTable_OneTestResult($label) {
     $result = $prep->fetchAll();
     
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
-		       "align=\"right\"", "align=\"center\"",
-		       "align=\"left\" width=\"200\"");
+                       "align=\"right\"", "align=\"center\"",
+                       "align=\"left\" width=\"200\"");
     foreach ($result as $r) {
-	list($test, $timestamp, $lo, $value, $hi, $comment, $backtrace) =
-	    array($r['label'], $r['entrytime'], $r['lowerlimit'], $r['value'], $r['upperlimit'],
-		  $r['comment'], $r['backtrace']);
-	
-	$pass = verifyTest($value, $lo, $hi);
-	if (!$lo) { $lo = "None"; }
-	if (!$hi) { $hi = "None"; }
+        list($test, $timestamp, $lo, $value, $hi, $comment, $backtrace) =
+            array($r['label'], $r['entrytime'], $r['lowerlimit'], $r['value'], $r['upperlimit'],
+                  $r['comment'], $r['backtrace']);
+        
+        $pass = verifyTest($value, $lo, $hi);
+        if (!$lo) { $lo = "None"; }
+        if (!$hi) { $hi = "None"; }
 
-	$mtime = date("Y-m_d H:i:s", $r['entrytime']);
+        $mtime = date("Y-m_d H:i:s", $r['entrytime']);
 
-	$loStr = sprintf("%.3f", $lo);
-	$hiStr = sprintf("%.3f", $hi);
-	$valueStr = sprintf("%.3f", $value);
+        $loStr = sprintf("%.3f", $lo);
+        $hiStr = sprintf("%.3f", $hi);
+        $valueStr = sprintf("%.3f", $value);
 
-	$table->addRow(array($test, $mtime,
-			     hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
-	#$table->addRow(array($test, date("Y-m-d H:i:s", $timestamp),
-	#		     $lo, hiLoColor($value, $pass), $hi, $comment));
+        $table->addRow(array($test, $mtime,
+                             hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
+        #$table->addRow(array($test, date("Y-m-d H:i:s", $timestamp),
+        #                    $lo, hiLoColor($value, $pass), $hi, $comment));
     }
     $db = NULL;
 
@@ -352,7 +352,7 @@ function write_OneBacktrace($label) {
     
     $out = "<h2>Backtrace</h2><br/>\n";
     if (empty($label)) {
-	return "<b>No test label specified. Cannot display backtrace.</b><br/>\n";
+        return "<b>No test label specified. Cannot display backtrace.</b><br/>\n";
     }
     
     global $dbFile;
@@ -364,7 +364,7 @@ function write_OneBacktrace($label) {
 
     $backtrace = "";
     foreach ($result as $r) {
-	$backtrace .= $r['backtrace'];
+        $backtrace .= $r['backtrace'];
     }
     $db = NULL;
 
@@ -385,7 +385,7 @@ function writeTable_metadata() {
 
     $testDir = getDefaultTest();
     $active = getActive();
-	
+        
     $meta = new Table();
     
     $db = connect($testDir);
@@ -395,7 +395,7 @@ function writeTable_metadata() {
     $results = $prep->fetchAll();
 
     foreach ($results as $r) {
-	$meta->addRow(array($r['key'].":", $r['value']));
+        $meta->addRow(array($r['key'].":", $r['value']));
     }
     $meta->addRow(array("Active:", $active));
     return $meta->write();
@@ -421,89 +421,89 @@ function writeMappedFigures($suffix="map") {
     $out = "";
     $d = @dir("$testDir");
     while(false !== ($f = $d->read())) {
-    	if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
+        if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
 
-	$base = preg_replace("/\.(png|PNG|jpg|JPG)/", "", $f);
-	$mapfile = $base . "." . $suffix;
+        $base = preg_replace("/\.(png|PNG|jpg|JPG)/", "", $f);
+        $mapfile = $base . "." . $suffix;
 
-	if (! preg_match("/$active/", $f) and $suffix != 'navmap') { continue; }
+        if (! preg_match("/$active/", $f) and $suffix != 'navmap') { continue; }
 
-	
-	# get the image path
-    	$path = "$testDir/$f";
-    	$mtime = date("Y-m_d H:i:s", filemtime($path));
-	$mapPath = "$testDir/$mapfile";
+        
+        # get the image path
+        $path = "$testDir/$f";
+        $mtime = date("Y-m_d H:i:s", filemtime($path));
+        $mapPath = "$testDir/$mapfile";
 
-	if (! file_exists($mapPath)) { continue; }
-	
-	# get the caption
-	$db = connect($testDir);
-	$cmd = "select caption from figure where filename = ?";
-	$prep = $db->prepare($cmd);
-	$prep->execute(array($f));
-	$result = $prep->fetchColumn();
+        if (! file_exists($mapPath)) { continue; }
+        
+        # get the caption
+        $db = connect($testDir);
+        $cmd = "select caption from figure where filename = ?";
+        $prep = $db->prepare($cmd);
+        $prep->execute(array($f));
+        $result = $prep->fetchColumn();
 
-	# load the map
-	$mapString = "<map id=\"$base\" name=\"$base\">\n";
-	$mapList = file($mapPath);
-	$activeArea = array(0.0, 0.0, 0.0, 0.0);
-	foreach($mapList as $line) {
-	    list($label, $x0, $y0, $x1, $y1, $info) = preg_split("/\s+/" ,$line);
-	    if ( preg_match("/$active/", $label) ) {
-		$activeArea = array($x0, $y0, $x1, $y1);
-	    }
-	    if (preg_match("/^nolink:/", $info)) {
-		$info = preg_replace("/^nolink:/", "", $info);
-		$mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" title=\"%s\">\n",
-				      $x0, $y0, $x1, $y1, $info);
-	    } else {
-		$href = "summary.php?active=$label";
-		$mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
-				      $x0, $y0, $x1, $y1, $href, $label." ".$info);
-	    }
-	}
-	$mapString .= "</map>\n";
+        # load the map
+        $mapString = "<map id=\"$base\" name=\"$base\">\n";
+        $mapList = file($mapPath);
+        $activeArea = array(0.0, 0.0, 0.0, 0.0);
+        foreach($mapList as $line) {
+            list($label, $x0, $y0, $x1, $y1, $info) = preg_split("/\s+/" ,$line);
+            if ( preg_match("/$active/", $label) ) {
+                $activeArea = array($x0, $y0, $x1, $y1);
+            }
+            if (preg_match("/^nolink:/", $info)) {
+                $info = preg_replace("/^nolink:/", "", $info);
+                $mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" title=\"%s\">\n",
+                                      $x0, $y0, $x1, $y1, $info);
+            } else {
+                $href = "summary.php?active=$label";
+                $mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
+                                      $x0, $y0, $x1, $y1, $href, $label." ".$info);
+            }
+        }
+        $mapString .= "</map>\n";
 
 
-	# make the img tag and wrap it in a highlighted div
-	$imgDiv = new Div("style=\"position: relative;\"");
-	list($x0, $y0, $x1, $y1) = $activeArea;
-	# not sure why these are too big ...
-	$dx = 1.0*(intval($x1) - intval($x0));
-	$dy = 1.0*(intval($y1) - intval($y0));
+        # make the img tag and wrap it in a highlighted div
+        $imgDiv = new Div("style=\"position: relative;\"");
+        list($x0, $y0, $x1, $y1) = $activeArea;
+        # not sure why these are too big ...
+        $dx = 1.0*(intval($x1) - intval($x0));
+        $dy = 1.0*(intval($y1) - intval($y0));
 
-	$hiliteColor2 = "magenta"; #"#00ff00";
-	$hiliteColor1 = "#00ff00";
-	if ($suffix == "navmap" and $x0 > 0 and $y0 > 0) {
-	    $wid = 2;
-	    $hilightDiv1 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor1 ${wid}px solid; z-index: 0;\" align=\"center\"");
-	    list($x0, $y0, $dx, $dy) = array($x0 + $wid, $y0 + $wid, $dx-2*$wid, $dy-2*$wid);
-	    $hilightDiv2 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor2 ${wid}px solid; z-index: 0;\" align=\"center\"");
-	    $imgDiv->append($hilightDiv1->write());
-	    $imgDiv->append($hilightDiv2->write());
-	}
+        $hiliteColor2 = "magenta"; #"#00ff00";
+        $hiliteColor1 = "#00ff00";
+        if ($suffix == "navmap" and $x0 > 0 and $y0 > 0) {
+            $wid = 2;
+            $hilightDiv1 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor1 ${wid}px solid; z-index: 0;\" align=\"center\"");
+            list($x0, $y0, $dx, $dy) = array($x0 + $wid, $y0 + $wid, $dx-2*$wid, $dy-2*$wid);
+            $hilightDiv2 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor2 ${wid}px solid; z-index: 0;\" align=\"center\"");
+            $imgDiv->append($hilightDiv1->write());
+            $imgDiv->append($hilightDiv2->write());
+        }
 
-	if (preg_match("/.tiff$/", $path)) {
-	    $imgTag = "<object data=\"$path\" type=\"image/tiff\" usemap=\"#$base\"><param name=\"negative\" value=\"yes\"></object>\n";
-	} else {
-	    $imgTag = "<img src=\"$path\" usemap=\"#$base\">\n";
-	}
+        if (preg_match("/.tiff$/", $path)) {
+            $imgTag = "<object data=\"$path\" type=\"image/tiff\" usemap=\"#$base\"><param name=\"negative\" value=\"yes\"></object>\n";
+        } else {
+            $imgTag = "<img src=\"$path\" usemap=\"#$base\">\n";
+        }
 
-	$imgDiv->append($imgTag);
+        $imgDiv->append($imgTag);
 
-	
-	$img = new Table();
-	if ($suffix == 'navmap') {
-	    $img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
-	}
-	$img->addRow(array("<center>".$imgDiv->write()."</center>"));
-	$img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));
-	$img->addRow(array("<b>$f</b>: timestamp=$mtime"));
-	$out .= $img->write();
-	$out .= $mapString;
-	$out .= "<br/>";
-	
-	$j += 1;
+        
+        $img = new Table();
+        if ($suffix == 'navmap') {
+            $img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
+        }
+        $img->addRow(array("<center>".$imgDiv->write()."</center>"));
+        $img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));
+        $img->addRow(array("<b>$f</b>: timestamp=$mtime"));
+        $out .= $img->write();
+        $out .= $mapString;
+        $out .= "<br/>";
+        
+        $j += 1;
     }
     return $out;
 }
@@ -518,47 +518,47 @@ function writeFigures() {
     $j = 0;
     $out = "";
     while( false !== ($f = $d->read())) {
-    	if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
+        if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
 
-	if (! preg_match("/$active/", $f)) { continue; }
+        if (! preg_match("/$active/", $f)) { continue; }
 
-	
-	# get the image path
-    	$path = "$testDir/$f";
+        
+        # get the image path
+        $path = "$testDir/$f";
 
-	# skip mapped files (they're obtained with writeMappedFigures() )
-	$base = preg_replace("/.(png|PNG|jpg|JPG)/", "", $path);
-	$map = $base . ".map";
-	$navmap = $base . ".navmap";
-	if (file_exists($map) or file_exists($navmap)) {
-	    continue;
-	}
+        # skip mapped files (they're obtained with writeMappedFigures() )
+        $base = preg_replace("/.(png|PNG|jpg|JPG)/", "", $path);
+        $map = $base . ".map";
+        $navmap = $base . ".navmap";
+        if (file_exists($map) or file_exists($navmap)) {
+            continue;
+        }
 
-    	$mtime = date("Y-m_d H:i:s", filemtime($path));
+        $mtime = date("Y-m_d H:i:s", filemtime($path));
 
-	# get the caption
-	$db = connect($testDir);
-	$cmd = "select caption from figure where filename = ?";
-	$prep = $db->prepare($cmd);
-	$prep->execute(array($f));
-	$result = $prep->fetchColumn();
+        # get the caption
+        $db = connect($testDir);
+        $cmd = "select caption from figure where filename = ?";
+        $prep = $db->prepare($cmd);
+        $prep->execute(array($f));
+        $result = $prep->fetchColumn();
 
-	# tiff must be handled specially
-	 
-	if (preg_match("/.tiff$/", $path)) {
-	    # this doesn't work.  tiffs disabled for now.
-	    $imgTag = "<object data=\"$path\" type=\"image/tiff\"><param name=\"negative\" value=\"yes\"></object>";
-	} else {
-	    $imgTag = "<img src=\"$path\">";
-	}
-	
-	$img = new Table();
-	$img->addRow(array("<center>$imgTag</center>"));
-	$img->addRow(array("<b>Figure 2.$j</b>:".$result));
-	$img->addRow(array("<b>$f</b>: timestamp=$mtime"));
-	$out .= $img->write();
-	$out .= "<br/>";
-	$j += 1;
+        # tiff must be handled specially
+         
+        if (preg_match("/.tiff$/", $path)) {
+            # this doesn't work.  tiffs disabled for now.
+            $imgTag = "<object data=\"$path\" type=\"image/tiff\"><param name=\"negative\" value=\"yes\"></object>";
+        } else {
+            $imgTag = "<img src=\"$path\">";
+        }
+        
+        $img = new Table();
+        $img->addRow(array("<center>$imgTag</center>"));
+        $img->addRow(array("<b>Figure 2.$j</b>:".$result));
+        $img->addRow(array("<b>$f</b>: timestamp=$mtime"));
+        $out .= $img->write();
+        $out .= "<br/>";
+        $j += 1;
     }
     
     return $out;
@@ -593,10 +593,10 @@ function summarizeTest($testDir) {
     $nPass = 0;
     $timestamp = 0;
     foreach($results as $result) {
-	if (verifyTest($result['value'], $result['lowerlimit'], $result['upperlimit'])){
-	    $nPass += 1;
-	}
-	$timestamp = $result['entrytime'];
+        if (verifyTest($result['value'], $result['lowerlimit'], $result['upperlimit'])){
+            $nPass += 1;
+        }
+        $timestamp = $result['entrytime'];
     }
 
     $ret = array();
@@ -622,7 +622,7 @@ function writeTable_SummarizeAllTests() {
     $d = @dir($dir) or dir("");
     $dirs = array();
     while(false !== ($testDir = $d->read())) {
-	$dirs[] = $testDir;
+        $dirs[] = $testDir;
     }
     sort($dirs);
     
@@ -631,39 +631,39 @@ function writeTable_SummarizeAllTests() {
     $table->addHeader(array("Test", "mtime", "No. Tests", "No. Passed", "Fail Rate"));
     #while(false !== ($testDir = $d->read())) {
     foreach ($dirs as $testDir) {
-	# only interested in directories, but not . or ..
-	if ( preg_match("/^\./", $testDir) or ! is_dir("$testDir")) {
-	    continue;
-	}
-	# only interested in the group requested
-	if (! preg_match("/test_".$group."/", $testDir)) {
-	    continue;
-	}
+        # only interested in directories, but not . or ..
+        if ( preg_match("/^\./", $testDir) or ! is_dir("$testDir")) {
+            continue;
+        }
+        # only interested in the group requested
+        if (! preg_match("/test_".$group."/", $testDir)) {
+            continue;
+        }
 
-	# if our group is "" ... ignore other groups
-	$parts = preg_split("/_/", $testDir);
-	if ( $group == "" and (count($parts) > 2)) {
-	    continue;
-	}
+        # if our group is "" ... ignore other groups
+        $parts = preg_split("/_/", $testDir);
+        if ( $group == "" and (count($parts) > 2)) {
+            continue;
+        }
 
-	$summ = summarizeTest($testDir);
-	$testDirStr = preg_replace("/^test_${group}_/", "", $testDir);
-	$testLink = "<a href=\"summary.php?test=$testDir\">$testDirStr</a>";
+        $summ = summarizeTest($testDir);
+        $testDirStr = preg_replace("/^test_${group}_/", "", $testDir);
+        $testLink = "<a href=\"summary.php?test=$testDir\">$testDirStr</a>";
 
-	$passLink = tfColor($summ['npass'], ($summ['npass']==$summ['ntest']));
-	$failRate = "n/a";
-	if ($summ['ntest'] > 0) {
-	    $failRate = 1.0 - 1.0*$summ['npass']/$summ['ntest'];
-	    $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
-	}
-	if ($summ['entrytime'] > 0) {
-	    $timestampStr = date("Y-m-d H:i:s", $summ['entrytime']);
-	} else {
-	    $timestampStr = "n/a";
-	}
-	
-	$table->addRow(array($testLink, $timestampStr,
-			     $summ['ntest'], $passLink, $failRate));
+        $passLink = tfColor($summ['npass'], ($summ['npass']==$summ['ntest']));
+        $failRate = "n/a";
+        if ($summ['ntest'] > 0) {
+            $failRate = 1.0 - 1.0*$summ['npass']/$summ['ntest'];
+            $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
+        }
+        if ($summ['entrytime'] > 0) {
+            $timestampStr = date("Y-m-d H:i:s", $summ['entrytime']);
+        } else {
+            $timestampStr = "n/a";
+        }
+        
+        $table->addRow(array($testLink, $timestampStr,
+                             $summ['ntest'], $passLink, $failRate));
     }
     return $table->write();
     
@@ -679,63 +679,63 @@ function writeTable_SummarizeAllGroups() {
     $table->addHeader(array("Test", "mtime", "TestSets", "TestSets Passed", "Tests", "Tests Passed", "Fail Rate"));
     foreach ($groups as $group=>$n) {
 
-	$nTestSets = 0;
-	$nTestSetsPass = 0;
-	$nTest = 0;
-	$nPass = 0;
-	
-	$d = @dir($dir) or dir("");
-	$dirs = array();
-	while(false !== ($testDir = $d->read())) {
-	    $dirs[] = $testDir;
-	}
-	asort($dirs);
-	
-	$lastUpdate = 0;
-	$d = @dir($dir) or dir("");
-	#while(false !== ($testDir = $d->read())) {
-	foreach ($dirs as $testDir) {
-	    if (!preg_match("/test_".$group."/", $testDir)) {
-		continue;
-	    }
-	    # must deal with default group "" specially
-	    $parts = preg_split("/_/", $testDir);
-	    if (count($parts) > 2 and $group == "") {
-		continue;
-	    }
-	    
-	    $summ = summarizeTest($testDir);
-	    $nTestSets += 1;
-	    $nTest += $summ['ntest'];
-	    $nPass += $summ['npass'];
-	    if ($summ['ntest'] == $summ['npass']) {
-		$nTestSetsPass += 1;
-	    }
-	    if ($summ['entrytime'] > $lastUpdate) {
-		$lastUpdate = $summ['entrytime'];
-	    }
-	}
+        $nTestSets = 0;
+        $nTestSetsPass = 0;
+        $nTest = 0;
+        $nPass = 0;
+        
+        $d = @dir($dir) or dir("");
+        $dirs = array();
+        while(false !== ($testDir = $d->read())) {
+            $dirs[] = $testDir;
+        }
+        asort($dirs);
+        
+        $lastUpdate = 0;
+        $d = @dir($dir) or dir("");
+        #while(false !== ($testDir = $d->read())) {
+        foreach ($dirs as $testDir) {
+            if (!preg_match("/test_".$group."/", $testDir)) {
+                continue;
+            }
+            # must deal with default group "" specially
+            $parts = preg_split("/_/", $testDir);
+            if (count($parts) > 2 and $group == "") {
+                continue;
+            }
+            
+            $summ = summarizeTest($testDir);
+            $nTestSets += 1;
+            $nTest += $summ['ntest'];
+            $nPass += $summ['npass'];
+            if ($summ['ntest'] == $summ['npass']) {
+                $nTestSetsPass += 1;
+            }
+            if ($summ['entrytime'] > $lastUpdate) {
+                $lastUpdate = $summ['entrytime'];
+            }
+        }
 
-	if ($group == "") {
-	    $testLink = "<a href=\"group.php?group=\">Top level</a>";
-	} else {
-	    $testLink = "<a href=\"group.php?group=$group\">$group</a>";
-	}
+        if ($group == "") {
+            $testLink = "<a href=\"group.php?group=\">Top level</a>";
+        } else {
+            $testLink = "<a href=\"group.php?group=$group\">$group</a>";
+        }
 
-	$passLink = tfColor($nPass, ($nPass==$nTest));
-	$failRate = "n/a";
-	if ($nTest > 0) {
-	    $failRate = 1.0 - 1.0*$nPass/$nTest;
-	    $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
-	}
-	if ($lastUpdate > 0) {
-	    $timestampStr = date("Y-m-d H:i:s", $lastUpdate);
-	} else {
-	    $timestampStr = "n/a";
-	}
-	
-	$table->addRow(array($testLink, $timestampStr,
-			     $nTestSets, $nTestSetsPass, $nTest, $passLink, $failRate));
+        $passLink = tfColor($nPass, ($nPass==$nTest));
+        $failRate = "n/a";
+        if ($nTest > 0) {
+            $failRate = 1.0 - 1.0*$nPass/$nTest;
+            $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
+        }
+        if ($lastUpdate > 0) {
+            $timestampStr = date("Y-m-d H:i:s", $lastUpdate);
+        } else {
+            $timestampStr = "n/a";
+        }
+        
+        $table->addRow(array($testLink, $timestampStr,
+                             $nTestSets, $nTestSetsPass, $nTest, $passLink, $failRate));
     }
     return $table->write();
     
@@ -768,31 +768,31 @@ function writeTable_Logs() {
     $ul = new UnorderedList();
     foreach ($dbtables as $dbtable) {
 
-	$name = $dbtable['name'];
-	$ul->addItem("<a href=\"#$name\">$name</a>");
-	
-	$cmd = "select * from ?";
-	$prep = $db->prepare($cmd);
-	$prep->execute(array($name));
-	$logs = $prep->fetchAll();
+        $name = $dbtable['name'];
+        $ul->addItem("<a href=\"#$name\">$name</a>");
+        
+        $cmd = "select * from ?";
+        $prep = $db->prepare($cmd);
+        $prep->execute(array($name));
+        $logs = $prep->fetchAll();
 
-	$tables .= "<h2 id=\"$name\">$name</h2><br/>";
-	
-	$table = new Table("width=\"80%\"");
-	$table->addHeader(array("Module", "Message", "Date", "Level"));
-	foreach ($logs as $log) {
+        $tables .= "<h2 id=\"$name\">$name</h2><br/>";
+        
+        $table = new Table("width=\"80%\"");
+        $table->addHeader(array("Module", "Message", "Date", "Level"));
+        foreach ($logs as $log) {
 
-	    # check for tracebacks from TestData
-	    $module = $log['module'];
-	    $msg = $log['message'];
-	    if (preg_match("/testQA.TestData$/", $module)) {
-		# get the idString from the message
-		$idString = preg_replace("/:.*/", "", $msg);
-		$module .= " <a href=\"backtrace.php?label=$idString\">Backtrace</a>";
-	    }
-	    $table->addRow(array($module, $msg, $log['date'], $log['level']));
-	}
-	$tables .= $table->write();
+            # check for tracebacks from TestData
+            $module = $log['module'];
+            $msg = $log['message'];
+            if (preg_match("/testQA.TestData$/", $module)) {
+                # get the idString from the message
+                $idString = preg_replace("/:.*/", "", $msg);
+                $module .= " <a href=\"backtrace.php?label=$idString\">Backtrace</a>";
+            }
+            $table->addRow(array($module, $msg, $log['date'], $log['level']));
+        }
+        $tables .= $table->write();
     }
     $contents = "<h2>Data Used in This Test</h2><br/>" . $ul->write() . "<br/><br/>";
     return $contents . $tables;
@@ -825,22 +825,22 @@ function writeTable_EupsSetups() {
     $ul = new UnorderedList();
     foreach ($dbtables as $dbtable) {
 
-	$name = $dbtable['name'];
-	$ul->addItem("<a href=\"#$name\">$name</a>");
-	
-	$cmd = "select * from ?";
-	$prep = $db->prepare($cmd);
-	$prep->execute(array($name));
-	$logs = $prep->fetchAll();
+        $name = $dbtable['name'];
+        $ul->addItem("<a href=\"#$name\">$name</a>");
+        
+        $cmd = "select * from ?";
+        $prep = $db->prepare($cmd);
+        $prep->execute(array($name));
+        $logs = $prep->fetchAll();
 
-	$tables .= "<h2 id=\"$name\">$name</h2><br/>";
-	
-	$table = new Table("width=\"80%\"");
-	$table->addHeader(array("Product", "Version", "Timestamp"));
-	foreach ($logs as $log) {
-	    $table->addRow(array($log['product'],$log['version'],date("Y-m-d H:i:s", $log['entrytime'])));
-	}
-	$tables .= $table->write();
+        $tables .= "<h2 id=\"$name\">$name</h2><br/>";
+        
+        $table = new Table("width=\"80%\"");
+        $table->addHeader(array("Product", "Version", "Timestamp"));
+        foreach ($logs as $log) {
+            $table->addRow(array($log['product'],$log['version'],date("Y-m-d H:i:s", $log['entrytime'])));
+        }
+        $tables .= $table->write();
     }
     $contents = "<h2>Data Sets Used in This Test</h2><br/>" . $ul->write() . "<br/><br/>";
     return $contents . $tables;
