@@ -420,9 +420,14 @@ function writeMappedFigures($suffix="map") {
     $j = 0;
     $out = "";
     $d = @dir("$testDir");
+    $imFiles = array();
     while(false !== ($f = $d->read())) {
         if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
-
+        $imFiles[] = $f;
+    }
+    asort($imFiles);
+    
+    foreach ($imFiles as $f) {
         $base = preg_replace("/\.(png|PNG|jpg|JPG)/", "", $f);
         $mapfile = $base . "." . $suffix;
 
