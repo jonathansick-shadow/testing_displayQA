@@ -5,6 +5,10 @@ DQAROOT=$(dirname $(dirname $SCRIPTPATH))
 
 cat <<EOF
 
+Source the appropriate file to make displayQA python code visible
+(ie. append to PYTHONPATH), and to set TESTING_DISPLAYQA_DIR so
+python will know where to write tests and figures.
+
 WARNING: Sourcing the setups.* scripts might break your lsst python
 installation!  It will create __init__.py in python/lsst/ and may
 conflict with the lsstimports module.  You should only do it if you're
@@ -23,13 +27,13 @@ touch \$PYPATH/lsst/__init__.py
 # if it's already setup, swap out the old python path, and put in the new one.
 if [ -z "\$TESTING_DISPLAYQA_DIR" ]; then
     export PYTHONPATH=\$PYTHONPATH:\$PYPATH
-    export TESTING_DISPLAYQA_DIR=\$DQAROOT
 else
     export PYTHONPATH=\$(echo \$PYTHONPATH | sed s/\$TESTING_DISPLAYQA_DIR/\$DQAROOT/)
-    export TESTING_DISPLAYQA_DIR=\$DQAROOT
 fi
+export TESTING_DISPLAYQA_DIR=\$DQAROOT
 EOF
 
+echo "Writing $DQAROOT/setups.sh"
 echo "$SETUPSSH" > $DQAROOT/setups.sh
 
 
@@ -44,13 +48,13 @@ touch \$PYPATH/lsst/__init__.py
 # if it's already setup, swap out the old python path, and put in the new one.
 if ("\$TESTING_DISPLAYQA_DIR" == "")  then
     setenv PYTHONPATH \$PYTHONPATH:\$PYPATH
-    setenv TESTING_DISPLAYQA_DIR \$DQAROOT
 else
     setenv PYTHONPATH \`echo \$PYTHONPATH | sed s/\$TESTING_DISPLAYQA_DIR/\$DQAROOT/g\`
-    setenv TESTING_DISPLAYQA_DIR \$DQAROOT
 endif
+setenv TESTING_DISPLAYQA_DIR \$DQAROOT
 EOF
 
+echo "Writing $DQAROOT/setups.csh"
 echo "$SETUPSCSH" > $DQAROOT/setups.csh
 
 
