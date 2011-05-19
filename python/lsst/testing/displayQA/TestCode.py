@@ -3,9 +3,9 @@ import traceback
 import os
 import re
 import inspect
-import sqlite
 import stat
 import eups
+import sqlite
 
 import LogConverter as logConv
 

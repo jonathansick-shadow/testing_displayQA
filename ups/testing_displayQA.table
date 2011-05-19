@@ -1,1 +1,4 @@
+setupRequired(numpy)
+setupRequired(matplotlib)
+setupRequired(pysqlite)
 envAppend(PYTHONPATH, ${PRODUCT_DIR}/python)
