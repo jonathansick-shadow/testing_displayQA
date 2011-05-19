@@ -2,10 +2,63 @@
 
 == Contents ==
 
+(0) How to Run pipeQA
 (1) How to use basic functionality of pipeQA/displayQA
 (2) The basic layout of pipeQA/displayQA
 (3) How to add a QaAnalysis test
 (4) How to add a new Camera
+
+
+
+== (0) How to run pipeQA
+
+The following steps are necessary to run pipeQA:
+
+- setup pipeQA
+- put displayQA in some web visible place (/var/www/html, ~/public_html/)
+- setup displayQA   [officially optional, but it provides the web display]
+- export TESTBED_PATH to point to the parent directory
+  of the data directory.
+- run the pipeQa.py script
+- look at your data with a browser at eg. www.foo.edu/~myuid/displayQA/
+
+The pipeQA quality assurance tests are run via a single script:
+
+pipeQA/bin/pipeQa.py
+
+Running with the '-h' option provides the following usage statement:
+
+----------------------------------------------------------------
+Usage: 
+pipeQa.py [options] dataset
+  dataset = Directory in TESTBED_PATH, full path to data, or database name
+
+
+Options:
+  -h, --help            show this help message and exit
+  -v VISIT, --visit=VISIT
+                        Specify visit as regex. Use neg. number for last 'n'
+                        visits. (default=-1)
+  -c CCD, --ccd=CCD     Specify ccd as regex (default=.*)
+  -r RAFT, --raft=RAFT  Specify raft as regex (default=.*)
+  -s SNAP, --snap=SNAP  Specify snap as regex (default=.*)
+  -R RERUN, --rerun=RERUN
+                        Rerun to analyse - only valid for hsc/suprimecam
+                        (default=none)
+  -t TEST, --test=TEST  Regex specifying which QaAnalysis to run (default=.*)
+-----------------------------------------------------------------
+
+
+Thus, to run all visits of an LSST Tuesday test run from the database:
+
+./bin/pipeQa.py -v ".*" buildbot_PT1_2_u_wp_trunk_2011_0513_200506
+
+
+To run from disk:
+
+export TESTBED_PATH=/lsst3/weekly/datarel-runs/latest
+./bin/pipeQa.py -v ".*" update
+
 
 
 
