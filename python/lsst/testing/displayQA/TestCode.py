@@ -31,7 +31,7 @@ class Test(object):
 	
         self.label = label
         if not areaLabel is None:
-            self.label += "-"+areaLabel
+            self.label += " -*- "+areaLabel
         self.value = value
         self.limits = limits
         self.comment = comment

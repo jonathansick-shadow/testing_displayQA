@@ -274,7 +274,7 @@ function writeTable_ListOfTestResults() {
         
         if (!$pass) {
             $test .= " <a href=\"backtrace.php?label=$test\">Backtrace</a>";
-            $labelWords = preg_split("/\s+/", $r['label']);
+            $labelWords = preg_split("/\s+-\*-\s+/", $r['label']);
             $thisLabel = $labelWords[count($labelWords)-1]; # this might just break ...
             $test .= ", <a href=\"summary.php?active=$thisLabel\">Active</a>";
         }
