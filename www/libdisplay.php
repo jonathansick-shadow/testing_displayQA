@@ -455,19 +455,22 @@ function writeMappedFigures($suffix="map") {
         $mapString = "<map id=\"$base\" name=\"$base\">\n";
         $mapList = file($mapPath);
         $activeArea = array(0.0, 0.0, 0.0, 0.0);
+        $activeTooltip = "";
         foreach($mapList as $line) {
             list($label, $x0, $y0, $x1, $y1, $info) = preg_split("/\s+/" ,$line);
-            if ( preg_match("/$active/", $label) ) {
-                $activeArea = array($x0, $y0, $x1, $y1);
-            }
             if (preg_match("/^nolink:/", $info)) {
-                $info = preg_replace("/^nolink:/", "", $info);
+                $tooltip = preg_replace("/^nolink:/", "", $info);
                 $mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" title=\"%s\">\n",
-                                      $x0, $y0, $x1, $y1, $info);
+                                      $x0, $y0, $x1, $y1, $tooltip);
             } else {
                 $href = "summary.php?active=$label";
+                $tooltip = $label." ".$info;
                 $mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
-                                      $x0, $y0, $x1, $y1, $href, $label." ".$info);
+                                      $x0, $y0, $x1, $y1, $href, $tooltip);
+            }
+            if ( preg_match("/$active/", $label) ) {
+                $activeArea = array($x0, $y0, $x1, $y1);
+                $activeTooltip = $tooltip;
             }
         }
         $mapString .= "</map>\n";
@@ -484,9 +487,9 @@ function writeMappedFigures($suffix="map") {
         $hiliteColor1 = "#00ff00";
         if ($suffix == "navmap" and $x0 > 0 and $y0 > 0) {
             $wid = 2;
-            $hilightDiv1 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor1 ${wid}px solid; z-index: 0;\" align=\"center\"");
+            $hilightDiv1 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor1 ${wid}px solid; z-index: 0;\" align=\"center\" title=\"$activeTooltip\"");
             list($x0, $y0, $dx, $dy) = array($x0 + $wid, $y0 + $wid, $dx-2*$wid, $dy-2*$wid);
-            $hilightDiv2 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor2 ${wid}px solid; z-index: 0;\" align=\"center\"");
+            $hilightDiv2 = new Div("style=\"position: absolute; left: ${x0}px; top: ${y0}px; width: ${dx}px; height: ${dy}px; border: $hiliteColor2 ${wid}px solid; z-index: 0;\" align=\"center\" title=\"$activeTooltip\"");
             $imgDiv->append($hilightDiv1->write());
             $imgDiv->append($hilightDiv2->write());
         }
