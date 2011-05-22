@@ -5,6 +5,15 @@ include_once("libdb.php");
 
 date_default_timezone_set('America/New_York');
 
+function p($val,$ret=0) {
+    static $i = 0;
+    $retStr = ($ret > 0) ? "<br/>\n" : "";
+    echo "<font color=\"#ff0000\">$i</font>:($val) ".$retStr;
+    $i += 1;
+    if ($ret > 0) {$i = 0;}
+}
+
+
 ######################################
 # true/false color
 # color text green if true, else red 
@@ -103,16 +112,19 @@ function getActive() {
     $haveMaps = false;
     $navmapFile = "";
     while(false !== ($f = $d->read())) {
+	#p($f,1);
         if (preg_match("/\.navmap/", $f)) {$navmapFile =  "$testDir/$f";}
-        if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; break; }
+        if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; }
     }
-
+    #p($testDir); p($haveMaps); p($navmapFile,1);
+    
     # validation list from the navmap file
     # ... a bit excessive to read the whole file, but it should only contain max ~100 entries.
     $validActive = array("all", ".*");
     if (strlen($navmapFile) > 0) {
         $lines = file($navmapFile);
         foreach ($lines as $line) {
+	    #p($line, 1);
             $arr = preg_split("/\s+/", $line);
             $validActive[] = $arr[0];
         }
@@ -436,7 +448,6 @@ function writeMappedFigures($suffix="map") {
 
         if (! preg_match("/$active/", $f) and $suffix != 'navmap') { continue; }
 
-        
         # get the image path
         $path = "$testDir/$f";
         $mtime = date("Y-m_d H:i:s", filemtime($path));
