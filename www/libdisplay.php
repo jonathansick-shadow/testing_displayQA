@@ -271,7 +271,7 @@ function writeTable_ListOfTestResults() {
     $result = $prep->fetchAll();
         
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
-                       "align=\"right\"", "align=\"center\"",
+                       "align=\"right\" width=\"50\"", "align=\"center\"",
                        "align=\"left\" width=\"200\"");
     foreach ($result as $r) {
         list($test, $lo, $value, $hi, $comment) =
@@ -292,9 +292,9 @@ function writeTable_ListOfTestResults() {
         }
         $mtime = date("Y-m-d H:i:s", $r['entrytime']);
 
-        $loStr = $lo ? sprintf("%.3f", $lo) : "None";
-        $hiStr = $hi ? sprintf("%.3f", $hi) : "None";
-        $valueStr = sprintf("%.3f", $value);
+        $loStr = $lo ? sprintf("%.4f", $lo) : "None";
+        $hiStr = $hi ? sprintf("%.4f", $hi) : "None";
+        $valueStr = sprintf("%.4f", $value);
 
         $table->addRow(array($test, $mtime,
                              hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
