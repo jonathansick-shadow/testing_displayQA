@@ -286,10 +286,13 @@ function writeTable_ListOfTestResults() {
         
         if (!$pass) {
             $test .= " <a href=\"backtrace.php?label=$test\">Backtrace</a>";
-            $labelWords = preg_split("/\s+-\*-\s+/", $r['label']);
-            $thisLabel = $labelWords[count($labelWords)-1]; # this might just break ...
-            $test .= ", <a href=\"summary.php?active=$thisLabel\">Active</a>";
         }
+
+        # allow the test to link to 
+        $labelWords = preg_split("/\s+-\*-\s+/", $r['label']);
+        $thisLabel = $labelWords[count($labelWords)-1]; # this might just break ...
+        $test .= ", <a href=\"summary.php?active=$thisLabel\">Active</a>";
+
         $mtime = date("Y-m-d H:i:s", $r['entrytime']);
 
         $loStr = $lo ? sprintf("%.4f", $lo) : "None";
