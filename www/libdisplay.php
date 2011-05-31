@@ -106,7 +106,11 @@ function getActive() {
 
     $testDir = getDefaultTest();
 
-
+    # if there are no tests yet, just default to .*
+    if (strlen($testDir) < 1) {
+	return ".*";
+    }
+    
     # see if there are maps associated with this
     $d = @dir("$testDir");
     $haveMaps = false;
@@ -251,6 +255,9 @@ function writeTable_timestamps($group=".*") {
 function writeTable_ListOfTestResults() {
 
     $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
     $active = getActive();
     
     $table = new Table("width=\"90%\"");
@@ -315,6 +322,9 @@ function displayTable_ListOfTestResults($testDir) {
 function writeTable_OneTestResult($label) {
 
     $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
     
     if (empty($label)) {
         return "<h2>No test label specified. Cannot display test result.</h2><br/>\n";
@@ -367,6 +377,9 @@ function writeTable_OneTestResult($label) {
 function write_OneBacktrace($label) {
 
     $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
     
     $out = "<h2>Backtrace</h2><br/>\n";
     if (empty($label)) {
@@ -402,6 +415,9 @@ function displayTable_OneTestResult($testDir, $label) {
 function writeTable_metadata() {
 
     $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
     $active = getActive();
         
     $meta = new Table();
@@ -432,6 +448,9 @@ function writeMappedFigures($suffix="map") {
 
     $testDir = getDefaultTest();
 
+    if (strlen($testDir) < 1) {
+	return "";
+    }
     $active = getActive();
 
     $figNum = ($suffix=="map") ? 2 : 1;
@@ -537,6 +556,10 @@ function writeMappedFigures($suffix="map") {
 function writeFigures() {
 
     $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
+    
     $active = getActive();
     $d = @dir($testDir);
 
@@ -780,6 +803,10 @@ function displayTable_SummarizeAllTests() {
 function writeTable_Logs() {
 
     $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
+    
     $db = connect($testDir);
 
     # first get the tables ... one for each ccd run
@@ -837,6 +864,9 @@ function displayTable_Logs() {
 function writeTable_EupsSetups() {
 
     $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
     $db = connect($testDir);
 
     # first get the tables ... one for each ccd run
