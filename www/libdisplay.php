@@ -411,6 +411,49 @@ function displayTable_OneTestResult($testDir, $label) {
 
 
 
+function writeTable_summarizeMetadata($keys, $group=".*") {
+
+    $tables = "";
+
+    $dir = "./";
+
+    $d = @dir($dir) or dir("");
+    $dirs = array();
+    while(false !== ($testDir = $d->read())) {
+        if (is_dir($testDir) and preg_match("/^test_$group/", $testDir)) {
+            $dirs[] = $testDir;
+        }
+    }
+    asort($dirs);
+    
+    foreach ($keys as $key) {
+        
+        $meta = new Table();
+        $meta->addHeader(array("$key"));
+        $values = array();
+        foreach ($dirs as $testDir) {
+            
+            $db = connect($testDir);
+            $cmd = "select key, value from metadata where key = ?";
+            $prep = $db->prepare($cmd);
+            $prep->execute(array($key));
+            $results = $prep->fetchAll();
+            
+            foreach ($results as $r) {
+                $values[] = $r['value'];
+            }
+        }
+        foreach (array_unique($values) as $value) {
+            $meta->addRow(array("$value"));
+        }
+        if (count($values) > 0) {
+            $tables .= $meta->write();
+        }
+    }
+
+    return $tables;
+    
+}
 
 function writeTable_metadata() {
 

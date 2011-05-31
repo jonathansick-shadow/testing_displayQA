@@ -16,5 +16,6 @@ $page->appendContent("<h2>Group: $group</h2><br/>");
 $page->appendContent(writeTable_SummarizeAllTests());
 
 $page->addSidebar(writeTable_timestamps($group));
+$page->addsidebar(writeTable_summarizeMetadata(array("dataset"), $group));
 
 echo $page;

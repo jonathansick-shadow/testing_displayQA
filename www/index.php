@@ -11,5 +11,6 @@ $menu = new Menu();
 $page = new Page(getDefaultTitle(), getDefaultH1(), $menu);
 $page->appendContent(writeTable_SummarizeAllGroups());
 $page->addSidebar(writeTable_timestamps());
+$page->addsidebar(writeTable_summarizeMetadata(array("dataset")));
 
 echo $page;
