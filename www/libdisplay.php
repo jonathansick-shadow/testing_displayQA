@@ -298,7 +298,7 @@ function writeTable_ListOfTestResults() {
         # allow the test to link to 
         $labelWords = preg_split("/\s+-\*-\s+/", $r['label']);
         $thisLabel = $labelWords[count($labelWords)-1]; # this might just break ...
-        $test .= ", <a href=\"summary.php?active=$thisLabel\">Active</a>";
+        $test .= ", <a href=\"summary.php?test=$testDir&active=$thisLabel\">Active</a>";
 
         $mtime = date("Y-m-d H:i:s", $r['entrytime']);
 
@@ -539,7 +539,7 @@ function writeMappedFigures($suffix="map") {
                 $mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" title=\"%s\">\n",
                                       $x0, $y0, $x1, $y1, $tooltip);
             } else {
-                $href = "summary.php?active=$label";
+                $href = "summary.php?test=$testDir&active=$label";
                 $tooltip = $label." ".$info;
                 $mapString .= sprintf("<area shape=\"rect\" coords=\"%d,%d,%d,%d\" href=\"%s\" title=\"%s\">\n",
                                       $x0, $y0, $x1, $y1, $href, $tooltip);
@@ -581,7 +581,7 @@ function writeMappedFigures($suffix="map") {
         
         $img = new Table();
         if ($suffix == 'navmap') {
-            $img->addRow(array("Show <a href=\"summary.php?active=all\">all</a>"));
+            $img->addRow(array("Show <a href=\"summary.php?test=$testDir&active=all\">all</a>"));
         }
         $img->addRow(array("<center>".$imgDiv->write()."</center>"));
         $img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));

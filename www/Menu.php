@@ -1,10 +1,14 @@
 <?php
 
 include_once("Html.php");
+include_once("libdisplay.php");
 
 class Menu {
 
     protected $_tabs = array();
+    private $_active;
+    private $_group;
+    private $_test;
     
     public function __construct() {
 
@@ -18,7 +22,9 @@ class Menu {
         $this->_tabs["eups"] = array("EUPS",    "eups.php");
         $this->_tabs["help"] = array("Help",    "help.php");
 
-        
+        $this->_active = getActive();
+        $this->_test   = getDefaultTest();
+        $this->_group  = getGroup();
     }
 
     
@@ -46,7 +52,8 @@ class Menu {
         $ul = new UnorderedList("id=\"nav\"");
         foreach (array_keys($this->_tabs) as $key) {
             list($label, $path) = $this->_tabs[$key];
-            $ul->addItem("<a href=\"$path\">$label</a>", $selected[$key] ? "id=\"selected\"" : "");
+            $href = $path . $this->_getArguments($key);
+            $ul->addItem("<a href=\"$href\">$label</a>", $selected[$key] ? "id=\"selected\"" : "");
         }
         $menu = "<div id=\"menu\">\n".$ul->write()."</div>\n";
         return $menu;
@@ -54,6 +61,22 @@ class Menu {
 
     public function write() { return $this->__toString(); }
 
+    private function _getArguments($key) {
+        $args = "";
+        switch($key) {
+        case "home":
+            $args = "";
+            break;
+        case "group":
+            $args = "?group=".$this->_group;
+            break;
+        case "summ":
+            $args = "?test=".$this->_test."&active=".$this->_active;
+            break;
+        }
+        return $args;
+    }
+    
   }
 
 
