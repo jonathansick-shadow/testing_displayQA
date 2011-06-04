@@ -6,8 +6,10 @@ import inspect
 import stat
 import eups
 import sqlite
-
 import LogConverter as logConv
+
+import numpy
+BAD_VALUE = -99
 
 class TestFailError(Exception):
     def __init__(self, message):
@@ -32,8 +34,16 @@ class Test(object):
         self.label = label
         if not areaLabel is None:
             self.label += " -*- "+areaLabel
-        self.value = value
+
         self.limits = limits
+        if numpy.isnan(value):
+            self.value = BAD_VALUE
+            if self.evaluate() != False:
+                # -99 is actually within the window of good values; keep as NaN for now
+                self.value = value
+        else:
+            self.value = value
+            
         self.comment = comment
 
     def __str__(self):
