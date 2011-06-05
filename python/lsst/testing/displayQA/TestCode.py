@@ -76,9 +76,11 @@ class TestSet(object):
         wwwBase = os.path.join(prodDir, "www")
         testfileName = inspect.stack()[-1][1]
         self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
-        prefix = "test_"
-        if len(group) > 0:
-            prefix += group+"_"
+        prefix = "test_"+group+"_"
+        #if len(group) > 0:
+        #    prefix += group+"_"
+        #else:
+        #    prefix += "_"
         self.wwwDir = os.path.join(wwwBase, prefix+self.testfileBase)
         if not label is None:
             self.wwwDir += "."+label
@@ -165,7 +167,8 @@ class TestSet(object):
         """
 
         if len(args) >= 4:
-            test = Test(*args, **kwargs)
+            label, val, limits, comment = args
+            test = Test(label, val, limits, comment, areaLabel=kwargs.get('areaLabel', None))
         elif len(args) == 1:
             test, = args
 
@@ -181,6 +184,9 @@ class TestSet(object):
         except TestFailError, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             backtrace = "".join(traceback.format_stack()[:-1]) + "\n" + str(e)
+            
+        if kwargs.has_key('backtrace'):
+            backtrace = kwargs['backtrace']
             
         # enter the test in the db
         keys = [x.split()[0] for x in self.tables[self.summTable]]

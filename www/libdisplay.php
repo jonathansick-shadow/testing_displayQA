@@ -707,7 +707,6 @@ function writeTable_SummarizeAllTests() {
     $dir = "./";
 
     $group = getGroup();
-    
 
     ## go through all directories and look for .summary files
     $d = @dir($dir) or dir("");
@@ -726,6 +725,7 @@ function writeTable_SummarizeAllTests() {
         if ( preg_match("/^\./", $testDir) or ! is_dir("$testDir")) {
             continue;
         }
+
         # only interested in the group requested
         if (! preg_match("/test_".$group."_/", $testDir)) {
             continue;
@@ -733,7 +733,7 @@ function writeTable_SummarizeAllTests() {
 
         # if our group is "" ... ignore other groups
         $parts = preg_split("/_/", $testDir);
-        if ( $group == "" and (count($parts) > 2)) {
+        if ( $group == "" and (strlen($parts[1]) > 0)) {
             continue;
         }
 
@@ -791,7 +791,7 @@ function writeTable_SummarizeAllGroups() {
             }
             # must deal with default group "" specially
             $parts = preg_split("/_/", $testDir);
-            if (count($parts) > 2 and $group == "") {
+            if (strlen($parts[1]) > 0 and $group == "") {
                 continue;
             }
             
