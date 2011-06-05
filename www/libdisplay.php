@@ -420,7 +420,7 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
     $d = @dir($dir) or dir("");
     $dirs = array();
     while(false !== ($testDir = $d->read())) {
-        if (is_dir($testDir) and preg_match("/^test_$group/", $testDir)) {
+        if (is_dir($testDir) and preg_match("/^test_${group}_/", $testDir)) {
             $dirs[] = $testDir;
         }
     }
@@ -727,7 +727,7 @@ function writeTable_SummarizeAllTests() {
             continue;
         }
         # only interested in the group requested
-        if (! preg_match("/test_".$group."/", $testDir)) {
+        if (! preg_match("/test_".$group."_/", $testDir)) {
             continue;
         }
 
@@ -786,7 +786,7 @@ function writeTable_SummarizeAllGroups() {
         $d = @dir($dir) or dir("");
         #while(false !== ($testDir = $d->read())) {
         foreach ($dirs as $testDir) {
-            if (!preg_match("/test_".$group."/", $testDir)) {
+            if (!preg_match("/^test_".$group."_/", $testDir)) {
                 continue;
             }
             # must deal with default group "" specially
