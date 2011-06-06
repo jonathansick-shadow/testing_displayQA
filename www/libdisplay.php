@@ -739,7 +739,7 @@ function writeTable_SummarizeAllTests() {
 
         $summ = summarizeTest($testDir);
         $testDirStr = preg_replace("/^test_${group}_/", "", $testDir);
-        $testLink = "<a href=\"summary.php?test=$testDir\">$testDirStr</a>";
+        $testLink = "<a href=\"summary.php?test=${testDir}&active=all\">$testDirStr</a>";
 
         $passLink = tfColor($summ['npass'], ($summ['npass']==$summ['ntest']));
         $failRate = "n/a";
