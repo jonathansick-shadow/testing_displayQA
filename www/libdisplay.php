@@ -715,9 +715,13 @@ function writeTable_SummarizeAllTests() {
         $dirs[] = $testDir;
     }
     sort($dirs);
+
+    $tdAttribs = array();#"align=\"left\"", "align=\"center\"",
+                       #"align=\"right\" width=\"100\"", 
+                       #"align=\"left\" width=\"100\"");
     
     $d = @dir($dir) or dir("");
-    $table = new Table("width=\"90%\"");
+    $table = new Table("width=\"100%\"");
     $table->addHeader(array("Test", "mtime", "No. Tests", "No. Passed", "Fail Rate"));
     #while(false !== ($testDir = $d->read())) {
     $summAll = 0;
@@ -756,7 +760,7 @@ function writeTable_SummarizeAllTests() {
         }
         
         $table->addRow(array($testLink, $timestampStr,
-                             $summ['ntest'], $passLink, $failRate));
+                             $summ['ntest'], $passLink, $failRate), $tdAttribs);
         $summAll += $summ['ntest'];
         $passAll += $summ['npass'];
     }
@@ -771,7 +775,8 @@ function writeTable_SummarizeAllGroups() {
     $groups = getGroupList();
     
     ## go through all directories and look for .summary files
-    $table = new Table("width=\"90%\"");
+    $table = new Table("width=\"100%\"");
+    #$tdAtt = array();
     $table->addHeader(array("Test", "mtime", "TestSets", "TestSets Passed", "Tests", "Tests Passed", "Fail Rate"));
     foreach ($groups as $group=>$n) {
 
