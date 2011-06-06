@@ -47,20 +47,20 @@ ul#nav li#selected a {
 
 /* main text box */
 #right {
-    float: left;
-    width: 58%;
+    position: absolute;
+    margin-right: 410px;
     padding: 1em;
     margin-bottom: 1.2em;
     background: #dddddd;
     text-align: justify;
+    overflow: hidden;
 }
 
 /* side text boxes */
 #left {
     float: right;
-    width: 38%;
+    width: 380px;
     margin: 0 0 10px 0;
-	
 }
 
 #left .box {

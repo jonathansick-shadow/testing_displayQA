@@ -720,6 +720,8 @@ function writeTable_SummarizeAllTests() {
     $table = new Table("width=\"90%\"");
     $table->addHeader(array("Test", "mtime", "No. Tests", "No. Passed", "Fail Rate"));
     #while(false !== ($testDir = $d->read())) {
+    $summAll = 0;
+    $passAll = 0;
     foreach ($dirs as $testDir) {
         # only interested in directories, but not . or ..
         if ( preg_match("/^\./", $testDir) or ! is_dir("$testDir")) {
@@ -755,7 +757,10 @@ function writeTable_SummarizeAllTests() {
         
         $table->addRow(array($testLink, $timestampStr,
                              $summ['ntest'], $passLink, $failRate));
+        $summAll += $summ['ntest'];
+        $passAll += $summ['npass'];
     }
+    $table->addRow(array("Total", "", $summAll, $passAll, sprintf("%.3f", 1.0 - $passAll/$summAll)));
     return $table->write();
     
 }
