@@ -49,8 +49,9 @@ class QaFigure(object):
 
     def savefig(self, path, **kwargs):
         """Save figure."""
+        olderr = numpy.seterr(all="warn")
         self.fig.savefig(path, dpi=self.fig.get_dpi(), **kwargs)
-
+        numpy.seterr(**olderr)
 
     def savemap(self, path):
         """Save internal map area data to .map file. """

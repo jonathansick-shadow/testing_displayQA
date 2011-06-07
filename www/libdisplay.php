@@ -764,7 +764,7 @@ function writeTable_SummarizeAllTests() {
         $summAll += $summ['ntest'];
         $passAll += $summ['npass'];
     }
-    $table->addRow(array("Total", "", $summAll, $passAll, sprintf("%.3f", 1.0 - $passAll/$summAll)));
+    $table->addRow(array("Total", "", $summAll, $passAll, sprintf("%.3f", 1.0 - $passAll/($summAll ? $summAll : 1))));
     return $table->write();
     
 }
