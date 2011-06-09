@@ -102,6 +102,17 @@ function getDefaultTest() {
 }
 
 
+function haveMaps($testDir) {
+    $d = @dir("$testDir");
+    $haveMaps = false;
+    $navmapFile = "";
+    while(false !== ($f = $d->read())) {
+	#p($f,1);
+        if (preg_match("/\.navmap/", $f)) {$navmapFile =  "$testDir/$f";}
+        if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; }
+    }
+    return array($haveMaps, $navmapFile);
+}
 function getActive() {
 
     $testDir = getDefaultTest();
@@ -112,14 +123,7 @@ function getActive() {
     }
     
     # see if there are maps associated with this
-    $d = @dir("$testDir");
-    $haveMaps = false;
-    $navmapFile = "";
-    while(false !== ($f = $d->read())) {
-	#p($f,1);
-        if (preg_match("/\.navmap/", $f)) {$navmapFile =  "$testDir/$f";}
-        if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; }
-    }
+    list($haveMaps, $navmapFile) = haveMaps($testDir);
     #p($testDir); p($haveMaps); p($navmapFile,1);
     
     # validation list from the navmap file
@@ -211,6 +215,7 @@ function writeTable_timestamps($group=".*") {
     $i = 0;
     $min = 0;
     $max = 0;
+    $n = 0;
     $d = @dir(".");
     while(false !== ($f = $d->read())) {
         if (! is_dir($f) or preg_match("/^\./", $f)) { continue; }
@@ -218,18 +223,22 @@ function writeTable_timestamps($group=".*") {
         if (! preg_match("/^test_$group/", $f)) { continue; }
         
         $db = connect($f);
-        $cmd = "select min(entrytime),max(entrytime) from summary";
+        $cmd = "select count(entrytime),min(entrytime),max(entrytime) from summary";
         $prep = $db->prepare($cmd);
         $prep->execute();
         $results = $prep->fetchAll();
         $result = $results[0];
-        if ($i == 0) {
-            list($min,$max) = $result;
+        $thisN = 0;
+        if ($i == 0 or $n == 0) {
+            list($thisN, $min,$max) = $result;
         }
+        $n += $thisN;
 
-        if ($result[0] < $min) { $min = $result[0]; }
-        if ($result[1] > $max) { $max = $result[1]; }
-
+        if ($result[0] > 0) {
+            if ($result[1] < $min) { $min = $result[1]; }
+            if ($result[2] > $max) { $max = $result[2]; }
+        }
+        
         $i += 1;
     }
 
@@ -744,8 +753,10 @@ function writeTable_SummarizeAllTests() {
         }
 
         $summ = summarizeTest($testDir);
+        list($haveMaps, $navmapFile) = haveMaps($testDir);
+        $active = ($haveMaps) ? "all" : ".*";
         $testDirStr = preg_replace("/^test_${group}_/", "", $testDir);
-        $testLink = "<a href=\"summary.php?test=${testDir}&active=all\">$testDirStr</a>";
+        $testLink = "<a href=\"summary.php?test=${testDir}&active=$active\">$testDirStr</a>";
 
         $passLink = tfColor($summ['npass'], ($summ['npass']==$summ['ntest']));
         $failRate = "n/a";

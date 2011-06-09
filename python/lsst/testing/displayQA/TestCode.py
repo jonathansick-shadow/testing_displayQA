@@ -68,19 +68,22 @@ class TestSet(object):
         @param group  A category this testSet belongs to
         """
 
+        missing = []
+        for env in ["WWW_ROOT", "WWW_RERUN"]:
+            if not os.environ.has_key(env):
+                missing.append(env)
+        if len(missing) > 0:
+            raise Exception("Must set environment variable:\n", "\n".join(missing))
+
 
         self.conn = None
 
-        #prodDir = eups.productDir("testing_displayQA")
-        prodDir = os.environ['TESTING_DISPLAYQA_DIR']
-        wwwBase = os.path.join(prodDir, "www")
+        wwwRootDir = os.environ['WWW_ROOT']
+        qaRerun = os.environ['WWW_RERUN']
+        wwwBase = os.path.join(wwwRootDir, qaRerun)
         testfileName = inspect.stack()[-1][1]
         self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
         prefix = "test_"+group+"_"
-        #if len(group) > 0:
-        #    prefix += group+"_"
-        #else:
-        #    prefix += "_"
         self.wwwDir = os.path.join(wwwBase, prefix+self.testfileBase)
         if not label is None:
             self.wwwDir += "."+label
