@@ -131,7 +131,7 @@ class Page {
         $uri = $_SERVER['REQUEST_URI'];
 
         $logfile = "site.log";
-        if (file_exists($logfile)) {
+        if (is_writable($logfile)) {
             $fp = fopen($logfile, 'a');
             fwrite($fp, "$nowStr $uri $ip $hostname\n");
             fclose($fp);
