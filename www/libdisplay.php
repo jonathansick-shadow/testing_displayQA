@@ -103,6 +103,9 @@ function getDefaultTest() {
 
 
 function haveMaps($testDir) {
+    if (!file_exists($testDir)) {
+        return array(false, "");
+    }
     $d = @dir("$testDir");
     $haveMaps = false;
     $navmapFile = "";
