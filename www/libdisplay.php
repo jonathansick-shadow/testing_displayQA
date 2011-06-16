@@ -27,13 +27,31 @@ function tfColor($string, $tf) {
     return $colorout;
 }
 
+function verifyTest($value, $lo, $hi) {
+    
+    $cmp = 0; #true;  # default true (ie. no limits were set)
+    if ($lo and $hi) {
+        if ($value < $lo) {
+            $cmp = -1;
+        } elseif ($value > $hi) {
+            $cmp = 1;
+        }
+    } elseif ($lo and !$hi and ($value < $lo)) {
+        $cmp = -1;
+    } elseif (!$lo and $hi and ($value > $hi)) {
+        $cmp = 1;
+    }
+    return $cmp;
+}
+
 function hiLoColor($value, $lo, $hi) {
     $fvalue = floatval($value);
-    if ((!$lo or $fvalue >= $lo) and (!$hi or $fvalue <=$hi)) {
+    $cmp = verifyTest($fvalue, $lo, $hi);
+    if ($cmp == 0) { #(!$lo or $fvalue >= $lo) and (!$hi or $fvalue <=$hi)) {
         $colorout = "<font color=\"#00aa00\">$value</font>";
-    } elseif ($lo and $fvalue < $lo) {
+    } elseif ($cmp < 0) { #$lo and $fvalue < $lo) {
         $colorout = "<font color=\"#000088\">$value</font>";
-    } elseif ($hi and $fvalue > $hi) {
+    } elseif ($cmp > 0) { #$hi and $fvalue > $hi) {
         $colorout = "<font color=\"#880000\">$value</font>";
     } else {
         $colorout = "$value";
@@ -61,20 +79,6 @@ function getDefaultH1() {
     return "Q.A. Test Summary";
 }
 
-function verifyTest($value, $lo, $hi) {
-    
-    $pass = true;  # default true (ie. no limits were set)
-    if ($lo and $hi) {
-        $pass = ($value >= $lo and $value <=$hi);
-    }
-    if ($lo and !$hi) {
-        $pass = ($value >= $lo);
-    }
-    if (!$lo and $hi) {
-        $pass = ($value <= $hi);
-    }
-    return $pass;
-}
 
 
 function getDefaultTest() {
@@ -292,6 +296,21 @@ function writeTable_ListOfTestResults() {
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
                        "align=\"right\" width=\"50\"", "align=\"center\"",
                        "align=\"left\" width=\"200\"");
+
+    # sort the values so the failures come up on top
+    $passed = array();
+    $failed = array();
+    foreach ($result as $r) {
+        list($test, $lo, $value, $hi, $comment) =
+            array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
+        $cmp = verifyTest($value, $lo, $hi);
+        if ($cmp) {
+            $failed[] = $r;
+        } else {
+            $passed[] = $r;
+        }
+    }
+    $result = array_merge($failed, $passed);
     foreach ($result as $r) {
         list($test, $lo, $value, $hi, $comment) =
             array($r['label'], $r['lowerlimit'], $r['value'], $r['upperlimit'], $r['comment']);
@@ -301,13 +320,13 @@ function writeTable_ListOfTestResults() {
         
         if (! preg_match("/$active/", $test) and ! preg_match("/all/", $active)) { continue; }
         
-        $pass = verifyTest($value, $lo, $hi);
+        $cmp = verifyTest($value, $lo, $hi);
         
-        if (!$pass) {
+        if ($cmp) {
             $test .= " <a href=\"backtrace.php?label=$test\">Backtrace</a>";
         }
 
-        # allow the test to link to 
+        # allow the test to link to
         $labelWords = preg_split("/\s+-\*-\s+/", $r['label']);
         $thisLabel = $labelWords[count($labelWords)-1]; # this might just break ...
         $test .= ", <a href=\"summary.php?test=$testDir&active=$thisLabel\">Active</a>";
@@ -367,7 +386,7 @@ function writeTable_OneTestResult($label) {
             array($r['label'], $r['entrytime'], $r['lowerlimit'], $r['value'], $r['upperlimit'],
                   $r['comment'], $r['backtrace']);
         
-        $pass = verifyTest($value, $lo, $hi);
+        $cmp = verifyTest($value, $lo, $hi);
         if (!$lo) { $lo = "None"; }
         if (!$hi) { $hi = "None"; }
 
@@ -696,7 +715,7 @@ function summarizeTest($testDir) {
     $nPass = 0;
     $timestamp = 0;
     foreach($results as $result) {
-        if (verifyTest($result['value'], $result['lowerlimit'], $result['upperlimit'])){
+        if (verifyTest($result['value'], $result['lowerlimit'], $result['upperlimit']) == 0){
             $nPass += 1;
         }
         $timestamp = $result['entrytime'];
