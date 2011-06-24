@@ -67,7 +67,7 @@ function hiLoColor($value, $lo, $hi) {
 function getCurrentUriDir() {
     $uri = $_SERVER['SCRIPT_NAME'];
     $dirs = preg_split("/\//", $uri);
-    $dir = $dirs[count($dirs)-3];
+    $dir = $dirs[count($dirs)-2];
     return $dir;
 }
 
@@ -76,7 +76,7 @@ function getDefaultTitle() {
 }
 
 function getDefaultH1() {
-    return "Q.A. Test Summary";
+    return "Q.A. Test Summary &nbsp;&nbsp; <a href=\"../\"><font size=\"3\">Go to main rerun list.</font></a>";
 }
 
 

@@ -15,7 +15,7 @@ $page = new Page(getDefaultTitle(), "Help", $menu);
 include_once("Html.php");
 
 
-$readme = join("", file("../doc/README"));
+$readme = join("", file("README"));
 $page->appendContent("<pre>\n$readme\n</pre>\n");
 
 ########################################

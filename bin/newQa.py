@@ -90,6 +90,8 @@ def main(qaName, wwwRoot=None, force=False):
     # copy the www/ to the destination
     src = os.path.join(dqaDir, "www")
     files = glob.glob(os.path.join(src, "[a-zA-Z]*"))
+    doc = os.path.join(dqaDir, "doc")
+    files += glob.glob(os.path.join(doc, "README"))
     cmd = "cp -r %s %s" % (" ".join(files), dest)
     os.system(cmd)
 
