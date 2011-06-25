@@ -161,7 +161,6 @@ class TestSet(object):
 	"""
 
         def addOneKvPair(k, v):
-            print k, v
             keys = [x.split()[0] for x in self.tables[self.cacheTable]]
             replacements = dict( zip(keys, [k, v]))
             self._insertOrUpdate(self.cacheTable, replacements, ['key'])
