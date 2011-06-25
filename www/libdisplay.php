@@ -46,15 +46,16 @@ function verifyTest($value, $lo, $hi) {
 
 function hiLoColor($value, $lo, $hi) {
     $fvalue = floatval($value);
+    $valueStr = sprintf("%.4f", $fvalue);
     $cmp = verifyTest($fvalue, $lo, $hi);
     if ($cmp == 0) { #(!$lo or $fvalue >= $lo) and (!$hi or $fvalue <=$hi)) {
-        $colorout = "<font color=\"#00aa00\">$value</font>";
+        $colorout = "<font color=\"#00aa00\">$valueStr</font>";
     } elseif ($cmp < 0) { #$lo and $fvalue < $lo) {
-        $colorout = "<font color=\"#000088\">$value</font>";
+        $colorout = "<font color=\"#000088\">$valueStr</font>";
     } elseif ($cmp > 0) { #$hi and $fvalue > $hi) {
-        $colorout = "<font color=\"#880000\">$value</font>";
+        $colorout = "<font color=\"#880000\">$valueStr</font>";
     } else {
-        $colorout = "$value";
+        $colorout = "$valueStr";
     }
     return $colorout;
 }
@@ -335,10 +336,9 @@ function writeTable_ListOfTestResults() {
 
         $loStr = $lo ? sprintf("%.4f", $lo) : "None";
         $hiStr = $hi ? sprintf("%.4f", $hi) : "None";
-        $valueStr = sprintf("%.4f", $value);
 
         $table->addRow(array($test, $mtime,
-                             hiLoColor($valueStr, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
+                             hiLoColor($value, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
     }
     $db = NULL;
     return $table->write();
@@ -691,27 +691,42 @@ function displayFigures($testDir) {
 
 
 
+function summarizeTestFromCache($testDir) {
+    $db = connect($testDir);
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    try {
+        $testCmd = "select entrytime,key,value from cache";
+        $prep = $db->prepare($testCmd);
+        $prep->execute();
+        $results = $prep->fetchAll();
+    } catch (PDOException $e) {
+        return -1;
+    }
+    $ret = array('npass' => 0, 'ntest' => 0);
+    $entrytime = 0;
+    foreach ($results as $r) {
+        list($entrytime, $key, $value) = array($r['entrytime'], $r['key'], $r['value']);
+        $ret[$key] = $value;
+    }
+    return array(
+        'name' => $testDir,
+        'entrytime' => $entrytime,
+        'npass' => intval($ret['npass']),
+        'ntest' => intval($ret['ntest'])
+        );
+}
 
 
 
-
-function summarizeTest($testDir) {
-    $summary = array();
-
-    global $dbFile;
-    #$mtime = date("Y-m_d H:i:s", filemtime("$testDir/$dbFile"));
+function summarizeTestByCounting($testDir) {
 
     $db = connect($testDir);
-    $testCmd = "select count(*) from summary";
-    $prep = $db->prepare($testCmd);
-    $prep->execute();
-    $nTest = $prep->fetchColumn();
-    
-    $passCmd = "select * from summary order by label";
+    $passCmd = "select * from summary";
     $prep = $db->prepare($passCmd);
     $prep->execute();
     $results = $prep->fetchAll();
-    
+
+    $nTest = 0;
     $nPass = 0;
     $timestamp = 0;
     foreach($results as $result) {
@@ -719,6 +734,7 @@ function summarizeTest($testDir) {
             $nPass += 1;
         }
         $timestamp = $result['entrytime'];
+        $nTest += 1;
     }
 
     $ret = array();
@@ -729,7 +745,13 @@ function summarizeTest($testDir) {
     return $ret;
 }
 
-
+function summarizeTest($testDir) {
+    $summ = summarizeTestFromCache($testDir);
+    if ($summ == -1) {
+        $summ = summarizeTestByCounting($testDir);
+    }
+    return $summ;
+}
 
 
 

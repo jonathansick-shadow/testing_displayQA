@@ -96,14 +96,15 @@ class TestSet(object):
         self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
         self.conn = sqlite.connect(self.dbFile)
         self.curs = self.conn.cursor()
-        self.summTable, self.figTable, self.metaTable, self.eupsTable = \
-                        "summary", "figure", "metadata", "eups"
+        self.summTable, self.figTable, self.metaTable, self.eupsTable, self.cacheTable = \
+                        "summary", "figure", "metadata", "eups", "cache"
         self.tables = {
             self.summTable : ["label text unique", "value double",
                               "lowerlimit double", "upperlimit double", "comment text",
                               "backtrace text"],
             self.figTable  : ["filename text", "caption text"],
             self.metaTable : ["key text", "value text"],
+            self.cacheTable: ["key text", "value text"],
             }
 
         self.stdKeys = ["id integer primary key autoincrement", "entrytime timestamp"]
@@ -120,6 +121,60 @@ class TestSet(object):
     def __del__(self):
         if not self.conn is None:
             self.conn.close()
+
+
+
+    def _verifyTest(self, value, lo, hi):
+
+        value, lo, hi = map(float, [value, lo, hi])
+    
+        cmp = 0   #true;  # default true (ie. no limits were set)
+        if (lo and hi):
+            if (value < lo):
+                cmp = -1
+            elif (value > hi):
+                cmp = 1
+        elif (lo and (hi is None) and (value < lo)):
+            cmp = -1
+        elif ((lo is None) and hi and (value > hi)):
+            cmp = 1
+        return cmp
+
+
+    def _readCache(self):
+        sql = "select value,lowerlimit,upperlimit from summary"
+        self.curs.execute(sql)
+        results = self.curs.fetchall()
+        resultsDict = {'ntest' : len(results)}
+        npass = 0
+        for r in results:
+            if not self._verifyTest(*r):
+                npass += 1
+        resultsDict['npass'] = npass
+        return resultsDict
+
+
+    def _writeCache(self, *args):
+        """Cache summary info for this TestSet
+
+	@param *args A dict of key,value pairs, or a key and value
+	"""
+
+        def addOneKvPair(k, v):
+            print k, v
+            keys = [x.split()[0] for x in self.tables[self.cacheTable]]
+            replacements = dict( zip(keys, [k, v]))
+            self._insertOrUpdate(self.cacheTable, replacements, ['key'])
+            
+        if len(args) == 1:
+            kvDict, = args
+            for k, v in kvDict.items():
+                addOneKvPair(k, v)
+        elif len(args) == 2:
+            k, v = args
+            addOneKvPair(k, v)
+        else:
+            raise Exception("Cache must be either dict (1 arg) or key,value pair (2 args).")
 
 
         
@@ -177,10 +232,21 @@ class TestSet(object):
 
         self.tests.append(test)
 
+        #cache the results
+        passed = test.evaluate()
+        cache = self._readCache()
+        if not cache.has_key('ntest'):
+            cache = {'ntest': 0, 'npass': 0}
+            
+        cacheNew = {"ntest": int(cache['ntest']) + 1 }
+        if passed:
+            cacheNew["npass"] = int(cache['npass']) + 1
+        self._writeCache(cacheNew)
+        
         # grab a traceback for failed tests
         backtrace = ""
         try:
-            if not test.evaluate():
+            if not passed:
                 raise TestFailError("Failed test '"+test.label+"': " +
                                         "value '" + str(test.value) + "' not in range '" +
                                         str(test.limits)+"'.")
@@ -198,6 +264,8 @@ class TestSet(object):
         self._insertOrUpdate(self.summTable, replacements, ['label'])
 
 
+
+
     def addMetadata(self, *args):
         """Associate metadata with this TestSet
 
@@ -210,6 +278,7 @@ class TestSet(object):
             self._insertOrUpdate(self.metaTable, replacements, ['key'])
             
         if len(args) == 1:
+            kvDict, = args
             for k, v in kvDict.items():
                 addOneKvPair(k, v)
         elif len(args) == 2:
@@ -217,6 +286,8 @@ class TestSet(object):
             addOneKvPair(k, v)
         else:
             raise Exception("Metadata must be either dict (1 arg) or key,value pair (2 args).")
+
+
         
     def importExceptionDict(self, exceptDict):
         """Given a dictionary of exceptions from TestData object, add the entries to the db."""
