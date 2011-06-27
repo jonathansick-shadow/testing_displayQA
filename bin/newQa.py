@@ -89,12 +89,19 @@ def main(qaName, wwwRoot=None, force=False):
                 
     # copy the www/ to the destination
     src = os.path.join(dqaDir, "www")
-    files = glob.glob(os.path.join(src, "[a-zA-Z]*"))
+    patterns = ["php", "css", "ico"]
+    files = []
+    for p in patterns:
+        files += glob.glob(os.path.join(src, "[a-zA-Z]*." + p))
     doc = os.path.join(dqaDir, "doc")
     files += glob.glob(os.path.join(doc, "README"))
-    cmd = "cp -r %s %s" % (" ".join(files), dest)
-    os.system(cmd)
 
+    for f in files:
+        print "installing: ", f
+        cmd = "cp -r %s %s" % (f, dest)
+        os.system(cmd)
+
+    print ""
     print "Created new QA site served from:"
     print "   ",dest
 

@@ -4,8 +4,11 @@ import os
 import re
 import inspect
 import stat
+import shutil
 import eups
 import sqlite
+import cPickle as pickle
+
 import LogConverter as logConv
 
 import numpy
@@ -62,7 +65,7 @@ class Test(object):
 class TestSet(object):
     """A container for Test objects and associated matplotlib figures."""
     
-    def __init__(self, label=None, group=""):
+    def __init__(self, label=None, group="", clean=False, useCache=False):
         """
         @param label  A name for this testSet
         @param group  A category this testSet belongs to
@@ -78,6 +81,8 @@ class TestSet(object):
 
         self.conn = None
 
+        self.useCache = useCache
+
         wwwRootDir = os.environ['WWW_ROOT']
         qaRerun = os.environ['WWW_RERUN']
         wwwBase = os.path.join(wwwRootDir, qaRerun)
@@ -88,6 +93,9 @@ class TestSet(object):
         if not label is None:
             self.wwwDir += "."+label
 
+        if clean and os.path.exists(self.wwwDir):
+            shutil.rmtree(self.wwwDir)
+
         if not os.path.exists(self.wwwDir):
             os.mkdir(self.wwwDir)
 
@@ -96,15 +104,15 @@ class TestSet(object):
         self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
         self.conn = sqlite.connect(self.dbFile)
         self.curs = self.conn.cursor()
-        self.summTable, self.figTable, self.metaTable, self.eupsTable, self.cacheTable = \
-                        "summary", "figure", "metadata", "eups", "cache"
+        self.summTable, self.figTable, self.metaTable, self.eupsTable, self.countsTable = \
+                        "summary", "figure", "metadata", "eups", "counts"
         self.tables = {
             self.summTable : ["label text unique", "value double",
                               "lowerlimit double", "upperlimit double", "comment text",
                               "backtrace text"],
             self.figTable  : ["filename text", "caption text"],
             self.metaTable : ["key text", "value text"],
-            self.cacheTable: ["key text", "value text"],
+            self.countsTable: ["key text", "value text"],
             }
 
         self.stdKeys = ["id integer primary key autoincrement", "entrytime timestamp"]
@@ -122,6 +130,29 @@ class TestSet(object):
         if not self.conn is None:
             self.conn.close()
 
+
+    #########################################
+    # routines to handle caching data
+    #########################################
+    def setUseCache(self, useCache):
+        self.useCache = useCache
+
+    def pickle(self, label, data):
+        if self.useCache:
+            filename = os.path.join(self.wwwDir, label+".pickle")
+            fp = open(filename, 'w')
+            pickle.dump(data, fp)
+            fp.close()
+
+    def unpickle(self, label, default=None):
+        data = default
+        if self.useCache:
+            filename = os.path.join(self.wwwDir, label+".pickle")
+            if os.path.exists(filename):
+                fp = open(filename)
+                data = pickle.load(fp)
+                fp.close()
+        return data
 
 
     def _verifyTest(self, value, lo, hi):
@@ -141,7 +172,7 @@ class TestSet(object):
         return cmp
 
 
-    def _readCache(self):
+    def _readCounts(self):
         sql = "select value,lowerlimit,upperlimit from summary"
         self.curs.execute(sql)
         results = self.curs.fetchall()
@@ -154,16 +185,16 @@ class TestSet(object):
         return resultsDict
 
 
-    def _writeCache(self, *args):
+    def _writeCounts(self, *args):
         """Cache summary info for this TestSet
 
 	@param *args A dict of key,value pairs, or a key and value
 	"""
 
         def addOneKvPair(k, v):
-            keys = [x.split()[0] for x in self.tables[self.cacheTable]]
+            keys = [x.split()[0] for x in self.tables[self.countsTable]]
             replacements = dict( zip(keys, [k, v]))
-            self._insertOrUpdate(self.cacheTable, replacements, ['key'])
+            self._insertOrUpdate(self.countsTable, replacements, ['key'])
             
         if len(args) == 1:
             kvDict, = args
@@ -233,14 +264,14 @@ class TestSet(object):
 
         #cache the results
         passed = test.evaluate()
-        cache = self._readCache()
-        if not cache.has_key('ntest'):
-            cache = {'ntest': 0, 'npass': 0}
+        counts = self._readCounts()
+        if not counts.has_key('ntest'):
+            counts = {'ntest': 0, 'npass': 0}
             
-        cacheNew = {"ntest": int(cache['ntest']) + 1 }
+        countsNew = {"ntest": int(counts['ntest']) + 1 }
         if passed:
-            cacheNew["npass"] = int(cache['npass']) + 1
-        self._writeCache(cacheNew)
+            countsNew["npass"] = int(counts['npass']) + 1
+        self._writeCounts(countsNew)
         
         # grab a traceback for failed tests
         backtrace = ""
@@ -314,7 +345,6 @@ class TestSet(object):
         if not areaLabel is None:
             path = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", path)
         fig.savefig(path)
-
 
         if hasattr(fig, "mapAreas") and len(fig.mapAreas) > 0:
             suffix = ".map"

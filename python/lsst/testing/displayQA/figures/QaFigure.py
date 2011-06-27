@@ -1,9 +1,8 @@
-import os, sys, re
+import os, sys, re, glob
 
 import numpy
 import numpy.ma as numpyMa
 
-#import pylab
 import matplotlib.figure as figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigCanvas
 from matplotlib.font_manager import FontProperties
@@ -22,7 +21,7 @@ class QaFigure(object):
         @param size  Figure size in inches
         @param dpi   Dots per inch to use.
         """
-        
+
         self.fig         = figure.Figure(figsize=size)
         self.fig.set_dpi(dpi)
         self.canvas      = FigCanvas(self.fig)
@@ -34,7 +33,6 @@ class QaFigure(object):
         
     def reset(self):
         self.fig.clf()
-        
 
     def validate(self):
         pass
