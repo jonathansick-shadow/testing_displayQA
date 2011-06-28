@@ -514,9 +514,12 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
         $dirsByGroup = getAllTestDirsByGroup();
         $dirs = $dirsByGroup[$group];
         $datasetsByGroup = getDataSetsByGroup();
-        $datasets = $datasetsByGroup[$group];
+        if ($datasetsByGroup != -1) {
+            $datasets = $datasetsByGroup[$group];
+        } else {
+            $datasets = -1;
+        }
     }
-
     
     foreach ($keys as $key) {
 
@@ -525,7 +528,8 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
         $values = array();
 
         #dataset is in the cache, so we can skip the directory listing
-        if ($key == 'dataset') {
+        if (($key == 'dataset') and ($datasets != -1) ) {
+
             $values = array_merge($values, $datasets);
             foreach (array_unique($datasets) as $value) {
                 $meta->addRow(array("$value"));
@@ -898,7 +902,7 @@ function writeTable_SummarizeAllTests() {
 
 
 function loadCache() {
-    $db = connect("."); #$testDir);
+    
 
     static $alreadyLoaded = false;
     static $results = array();
@@ -906,6 +910,10 @@ function loadCache() {
     if ($alreadyLoaded) {
         return $results;
     } else {
+        if (!file_exists("db.sqlite3")) {
+            return -1;
+        }
+        $db = connect("."); #$testDir);
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         try {
             $testCmd = "select entrytime,test,ntest,npass,dataset from counts;";
@@ -927,6 +935,7 @@ function getDataSetsByGroup() {
     if ($results == -1) {
         return -1;
     }
+
     $dirs = array();
     foreach($results as $r) {
         $testDir = $r['test'];
@@ -947,6 +956,9 @@ function getDataSetsByGroup() {
 }
 function getDataSets() {
     $datasetsByGroup = getDataSetsByGroup();
+    if ($datasetsByGroup == -1) {
+        return -1;
+    }
     $datasets = array();
     foreach ($datasetsByGroup as $k=>$v) {
         $datasets = array_merge($datasets, $v);
@@ -1030,6 +1042,7 @@ function writeTable_SummarizeAllGroups() {
     $table->addHeader(array("Test", "mtime", "TestSets", "TestSets Passed", "Tests", "Tests Passed", "Fail Rate"));
     foreach ($groups as $group=>$n) {
 
+        #echo "group: ".$group."<br/>";
         $nTestSets = 0;
         $nTestSetsPass = 0;
         $nTest = 0;

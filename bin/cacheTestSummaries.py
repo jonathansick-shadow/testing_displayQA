@@ -60,13 +60,21 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
     testSetInfo = []
     for test in testList:
         path, basename = os.path.split(test)
-        m = re.search("^test_([^_.]+)_([^_.]+).([^_]+)$", basename)
+        m = re.search("^test_([^_.]+)_([^_.]+)\.([^_]+)$", basename)
         group, alias, label = None, None, None
         if m:
             group, alias, label = m.groups()
         if (not group is None) and (not alias is None) and (not label is None):
             testSetInfo.append([group, alias, label])
-            
+
+        # handle the top-level (ie. nameless) group
+        group, alias, label = None, None, None
+        m = re.search("^test__([^_.]+)\.([^_]+)$", basename)
+        if m:
+            alias, label = m.groups()
+            group = ""
+        if (not group is None) and (not alias is None) and (not label is None):
+            testSetInfo.append([group, alias, label])
 
     # for each test, create a testSet, and recache things
     print "Adjusting: "
@@ -91,14 +99,18 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(usage=__doc__)
     parser.add_option("-f", '--force', default=False, action="store_true",
                       help="Force install if versions differ (default=%default)")
+    parser.add_option("-p", "--npass", default=0, type=int,
+                      help="Adjust npass by this amount (default=%default)")
     parser.add_option('-r', '--root', default=None, help="Override WWW_ROOT (default=%default")
+    parser.add_option("-t", "--ntest", default=0, type=int,
+                      help="Adjust ntest by this amount (default=%default)")
     opts, args = parser.parse_args()
 
-    if len(args) != 3:
+    if len(args) != 1:
         parser.print_help()
         sys.exit(1)
 
-    qaName, ntestAdjust, npassAdjust = args
+    qaName, = args
     
-    main(qaName, int(ntestAdjust), int(npassAdjust), opts.root, opts.force)
+    main(qaName, opts.ntest, opts.npass, opts.root, opts.force)
     
