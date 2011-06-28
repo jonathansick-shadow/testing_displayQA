@@ -96,11 +96,16 @@ function getDefaultTest() {
     # ... use the first available test directory
     if (strlen($testDir) == 0 or !file_exists($testDir)) {
         $d = @dir(".");
+        $foundOne = false;
         while(false !== ($f = $d->read())) {
             if (preg_match("/test_/", $f) and is_dir($f)) {
                 $testDir = $f;
+                $foundOne = true;
                 break;
             }
+        }
+        if (!$foundOne) {
+            $testDir = "";
         }
     }
     return $testDir;
@@ -264,8 +269,13 @@ function getTimeStampsFromCache() {
     foreach ($results as $r) {
         $tstamps[] = intval($r['entrytime']);
     }
-    $min = min($tstamps);
-    $max = max($tstamps);
+    if (count($tstamps) > 0) {
+        $min = min($tstamps);
+        $max = max($tstamps);
+    } else {
+        $min = 0;
+        $max = 0;
+    }
     return array($min, $max);
 }
 
@@ -512,9 +522,13 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
         $datasets = getDataSets();
     } else {
         $dirsByGroup = getAllTestDirsByGroup();
-        $dirs = $dirsByGroup[$group];
+        if (array_key_exists($group, $dirsByGroup)) {
+            $dirs = $dirsByGroup[$group];
+        } else {
+            $dirs = array();
+        }
         $datasetsByGroup = getDataSetsByGroup();
-        if ($datasetsByGroup != -1) {
+        if ($datasetsByGroup != -1 and array_key_exists($group, $datasetsByGroup)) {
             $datasets = $datasetsByGroup[$group];
         } else {
             $datasets = -1;
@@ -532,7 +546,9 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
 
             $values = array_merge($values, $datasets);
             foreach (array_unique($datasets) as $value) {
-                $meta->addRow(array("$value"));
+                if ($value != "unknown") {
+                    $meta->addRow(array("$value"));
+                }
             }
         # other keys we'll do the search
         } else {
@@ -605,6 +621,7 @@ function writeMappedFigures($suffix="map") {
     $figNum = ($suffix=="map") ? 2 : 1;
     $j = 0;
     $out = "";
+
     $d = @dir("$testDir");
     $imFiles = array();
     while(false !== ($f = $d->read())) {
@@ -945,6 +962,7 @@ function getDataSetsByGroup() {
         }
         $parts = preg_split("/_/", $testDir);
         $group = $parts[1];
+
         if (array_key_exists($group, $dirs)) {
             $dirs[$group][] = $dataset;
         } else {
@@ -1039,7 +1057,9 @@ function writeTable_SummarizeAllGroups() {
     ## go through all directories and look for .summary files
     $table = new Table("width=\"100%\"");
     #$tdAtt = array();
-    $table->addHeader(array("Test", "mtime", "TestSets", "TestSets Passed", "Tests", "Tests Passed", "Fail Rate"));
+    $table->addHeader(array("No.", "Test", "mtime", "TestSets", "TestSets Passed", "Tests", "Tests Passed", "Fail Rate"));
+
+    $iGroup = 1;
     foreach ($groups as $group=>$n) {
 
         #echo "group: ".$group."<br/>";
@@ -1081,6 +1101,11 @@ function writeTable_SummarizeAllGroups() {
             }
         }
 
+        # don't bother posting a TestSet with no Tests (ie. an empty directory)
+        if ($nTest == 0) {
+            continue;
+        }
+        
         if ($group == "") {
             $testLink = "<a href=\"group.php?group=\">Top level</a>";
         } else {
@@ -1099,8 +1124,9 @@ function writeTable_SummarizeAllGroups() {
             $timestampStr = "n/a";
         }
         
-        $table->addRow(array($testLink, $timestampStr,
+        $table->addRow(array($iGroup, $testLink, $timestampStr,
                              $nTestSets, $nTestSetsPass, $nTest, $passLink, $failRate));
+        $iGroup += 1;
     }
     return $table->write();
     
