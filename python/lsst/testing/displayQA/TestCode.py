@@ -65,7 +65,7 @@ class Test(object):
 class TestSet(object):
     """A container for Test objects and associated matplotlib figures."""
     
-    def __init__(self, label=None, group="", clean=False, useCache=False):
+    def __init__(self, label=None, group="", clean=False, useCache=False, alias=None):
         """
         @param label  A name for this testSet
         @param group  A category this testSet belongs to
@@ -85,13 +85,18 @@ class TestSet(object):
 
         wwwRootDir = os.environ['WWW_ROOT']
         qaRerun = os.environ['WWW_RERUN']
-        wwwBase = os.path.join(wwwRootDir, qaRerun)
+        self.wwwBase = os.path.join(wwwRootDir, qaRerun)
         testfileName = inspect.stack()[-1][1]
-        self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
+        if alias is None:
+            self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
+        else:
+            self.testfileBase = alias
+            
         prefix = "test_"+group+"_"
-        self.wwwDir = os.path.join(wwwBase, prefix+self.testfileBase)
+        self.testDir = prefix+self.testfileBase
         if not label is None:
-            self.wwwDir += "."+label
+            self.testDir += "."+label
+        self.wwwDir = os.path.join(self.wwwBase, self.testDir)
 
         if clean and os.path.exists(self.wwwDir):
             shutil.rmtree(self.wwwDir)
@@ -104,27 +109,46 @@ class TestSet(object):
         self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
         self.conn = sqlite.connect(self.dbFile)
         self.curs = self.conn.cursor()
-        self.summTable, self.figTable, self.metaTable, self.eupsTable, self.countsTable = \
-                        "summary", "figure", "metadata", "eups", "counts"
+        self.summTable, self.figTable, self.metaTable, self.eupsTable = \
+                        "summary", "figure", "metadata", "eups"
         self.tables = {
             self.summTable : ["label text unique", "value double",
                               "lowerlimit double", "upperlimit double", "comment text",
                               "backtrace text"],
             self.figTable  : ["filename text", "caption text"],
             self.metaTable : ["key text", "value text"],
-            self.countsTable: ["key text", "value text"],
             }
 
         self.stdKeys = ["id integer primary key autoincrement", "entrytime timestamp"]
         for k, v in self.tables.items():
             keys = self.stdKeys + v
             cmd = "create table if not exists " + k + " ("+",".join(keys)+")"
-            self.conn.execute(cmd)
+            self.curs.execute(cmd)
 
-        
         self.conn.commit()
-
         self.tests = []
+
+        # create the cache table
+        self.countsTable = "counts"
+        self.countKeys = ["test text", "ntest integer", "npass integer", "dataset text"]
+        keys = self.stdKeys + self.countKeys
+        cmd = "create table if not exists " + self.countsTable + " ("+",".join(keys)+")"
+        curs = self.cacheConnect()
+        curs.execute(cmd)
+        self.cacheClose()
+        
+
+    def cacheConnect(self):
+        self.cacheDbFile = os.path.join(self.wwwBase, "db.sqlite3")
+        self.cacheConn = sqlite.connect(self.cacheDbFile)
+        self.cacheCurs = self.cacheConn.cursor()
+        return self.cacheCurs
+
+    def cacheClose(self):
+        if not self.cacheConn is None:
+            self.cacheConn.close()
+            
+
         
     def __del__(self):
         if not self.conn is None:
@@ -176,39 +200,40 @@ class TestSet(object):
         sql = "select value,lowerlimit,upperlimit from summary"
         self.curs.execute(sql)
         results = self.curs.fetchall()
+
+        
         resultsDict = {'ntest' : len(results)}
         npass = 0
         for r in results:
             if not self._verifyTest(*r):
                 npass += 1
         resultsDict['npass'] = npass
-        return resultsDict
+
+        sql = "select key,value from metadata"
+        self.curs.execute(sql)
+        metaresults = self.curs.fetchall()
+        dataset = "unknown"
+        for m in metaresults:
+            k, v = m
+            if k == 'dataset':
+                dataset = v
+        
+        return resultsDict['ntest'], resultsDict['npass'], dataset
 
 
-    def _writeCounts(self, *args):
+    def _writeCounts(self, ntest, npass, dataset="unknown"):
         """Cache summary info for this TestSet
 
 	@param *args A dict of key,value pairs, or a key and value
 	"""
 
-        def addOneKvPair(k, v):
-            keys = [x.split()[0] for x in self.tables[self.countsTable]]
-            replacements = dict( zip(keys, [k, v]))
-            self._insertOrUpdate(self.countsTable, replacements, ['key'])
-            
-        if len(args) == 1:
-            kvDict, = args
-            for k, v in kvDict.items():
-                addOneKvPair(k, v)
-        elif len(args) == 2:
-            k, v = args
-            addOneKvPair(k, v)
-        else:
-            raise Exception("Cache must be either dict (1 arg) or key,value pair (2 args).")
-
-
+        curs = self.cacheConnect()
+        keys = [x.split()[0] for x in self.countKeys]
+        replacements = dict( zip(keys, [self.testDir, ntest, npass, dataset]))
+        self._insertOrUpdate(self.countsTable, replacements, ['test'], cache=True)
+        self.cacheClose()
         
-    def _insertOrUpdate(self, table, replacements, selectKeys):
+    def _insertOrUpdate(self, table, replacements, selectKeys, cache=False):
         """Insert entries into a database table, overwrite if they already exist."""
         
         # there must be a better sql way to do this ... but my sql-foo is weak
@@ -224,7 +249,10 @@ class TestSet(object):
         where = " where " + " and ".join(where)
         
         cmd = "delete from " + table + " " + where
-        self.curs.execute(cmd)
+        if not cache:
+            self.curs.execute(cmd)
+        else:
+            self.cacheCurs.execute(cmd)
 
         
         # insert the new data
@@ -238,8 +266,12 @@ class TestSet(object):
         qmark = " (NULL, strftime('%s', 'now')," + ",".join("?"*len(values)) + ")"
         cmd = "insert into "+table+inlist + " values " + qmark
 
-        self.curs.execute(cmd, values)
-        self.conn.commit()
+        if not cache:
+            self.curs.execute(cmd, values)
+            self.conn.commit()
+        else:
+            self.cacheCurs.execute(cmd, values)
+            self.cacheConn.commit()
 
 
     def addTests(self, testList):
@@ -247,6 +279,19 @@ class TestSet(object):
         for test in testList:
             self.addTest(test)
             
+
+    def updateCounts(self, dataset=None, increment=[0,0]):
+        ntest, npass = increment
+        
+        ntestOrig, npassOrig, datasetOrig = self._readCounts()
+        ntest = int(ntestOrig) + ntest
+        npass = int(npassOrig) + npass
+        if dataset is None:
+            dataset = datasetOrig
+        self._writeCounts(ntest, npass, dataset)
+
+        # return the new settings
+        return ntest, npass, dataset
         
     def addTest(self, *args, **kwargs):
         """Add a test to this testing suite.
@@ -264,14 +309,8 @@ class TestSet(object):
 
         #cache the results
         passed = test.evaluate()
-        counts = self._readCounts()
-        if not counts.has_key('ntest'):
-            counts = {'ntest': 0, 'npass': 0}
-            
-        countsNew = {"ntest": int(counts['ntest']) + 1 }
-        if passed:
-            countsNew["npass"] = int(counts['npass']) + 1
-        self._writeCounts(countsNew)
+        npassed = 1 if passed else 0
+        self.updateCounts(increment=[1, npassed])
         
         # grab a traceback for failed tests
         backtrace = ""

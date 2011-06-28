@@ -170,7 +170,42 @@ function getActive() {
 ####################################################
 # groups
 ####################################################
+function getGroupListFromCache() {
+    
+    $results = loadCache();
+    if ($results == -1) {
+        return -1;
+    }
+    
+    $groups = array();
+    #$entrytime = 0;
+    foreach ($results as $r) {
+        $testDir = $r['test'];
+        $parts = preg_split("/_/", $testDir);
+
+        if (count($parts) > 2) {
+            $group = $parts[1];
+        } else {
+            $group = "";
+        }
+        
+        if (array_key_exists($group, $groups)) {
+            $groups[$group] += 1;
+        } else {
+            $groups[$group] = 1;
+        }
+    }
+    ksort($groups);
+    return $groups;
+}
+
 function getGroupList() {
+
+    $fromCache = getGroupListFromCache();
+    if ($fromCache != -1) {
+        return $fromCache;
+    }
+    
     $dir = "./";
     $groups = array();
     $d = @dir($dir) or dir("");
@@ -218,38 +253,61 @@ function getGroup() {
 ####################################################
 #
 ####################################################
+function getTimeStampsFromCache() {
+
+    $results = loadCache();
+    if ($results == -1) {
+        return -1;
+    }
+    
+    $tstamps = array();
+    foreach ($results as $r) {
+        $tstamps[] = intval($r['entrytime']);
+    }
+    $min = min($tstamps);
+    $max = max($tstamps);
+    return array($min, $max);
+}
+
+
 function writeTable_timestamps($group=".*") {
 
-    $i = 0;
-    $min = 0;
-    $max = 0;
-    $n = 0;
-    $d = @dir(".");
-    while(false !== ($f = $d->read())) {
-        if (! is_dir($f) or preg_match("/^\./", $f)) { continue; }
-
-        if (! preg_match("/^test_$group/", $f)) { continue; }
-        
-        $db = connect($f);
-        $cmd = "select count(entrytime),min(entrytime),max(entrytime) from summary";
-        $prep = $db->prepare($cmd);
-        $prep->execute();
-        $results = $prep->fetchAll();
-        $result = $results[0];
-        $thisN = 0;
-        if ($i == 0 or $n == 0) {
-            list($thisN, $min,$max) = $result;
+    $minmax = getTimeStampsFromCache();
+    if ($minmax == -1) {
+        $i = 0;
+        $min = 0;
+        $max = 0;
+        $n = 0;
+        $d = @dir(".");
+        while(false !== ($f = $d->read())) {
+            if (! is_dir($f) or preg_match("/^\./", $f)) { continue; }
+            
+            if (! preg_match("/^test_$group/", $f)) { continue; }
+            
+            $db = connect($f);
+            $cmd = "select count(entrytime),min(entrytime),max(entrytime) from summary";
+            $prep = $db->prepare($cmd);
+            $prep->execute();
+            $results = $prep->fetchAll();
+            $result = $results[0];
+            $thisN = 0;
+            if ($i == 0 or $n == 0) {
+                list($thisN, $min,$max) = $result;
+            }
+            $n += $thisN;
+            
+            if ($result[0] > 0) {
+                if ($result[1] < $min) { $min = $result[1]; }
+                if ($result[2] > $max) { $max = $result[2]; }
+            }
+            
+            $i += 1;
         }
-        $n += $thisN;
-
-        if ($result[0] > 0) {
-            if ($result[1] < $min) { $min = $result[1]; }
-            if ($result[2] > $max) { $max = $result[2]; }
-        }
-        
-        $i += 1;
+    } else {
+        list($min, $max) = $minmax;
     }
 
+    
     $table = new Table("width=\"80%\"");
     $table->addHeader(array("Oldest Entry", "Most Recent Entry"));
     $now = time();
@@ -448,34 +506,47 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
 
     $dir = "./";
 
-    $d = @dir($dir) or dir("");
-    $dirs = array();
-    while(false !== ($testDir = $d->read())) {
-        if (is_dir($testDir) and preg_match("/^test_${group}_/", $testDir)) {
-            $dirs[] = $testDir;
-        }
+    #$d = @dir($dir) or dir("");
+    if ($group === '.*') {
+        $dirs = getAllTestDirs();
+        $datasets = getDataSets();
+    } else {
+        $dirsByGroup = getAllTestDirsByGroup();
+        $dirs = $dirsByGroup[$group];
+        $datasetsByGroup = getDataSetsByGroup();
+        $datasets = $datasetsByGroup[$group];
     }
-    asort($dirs);
+
     
     foreach ($keys as $key) {
-        
+
         $meta = new Table();
         $meta->addHeader(array("$key"));
         $values = array();
-        foreach ($dirs as $testDir) {
-            
-            $db = connect($testDir);
-            $cmd = "select key, value from metadata where key = ?";
-            $prep = $db->prepare($cmd);
-            $prep->execute(array($key));
-            $results = $prep->fetchAll();
-            
-            foreach ($results as $r) {
-                $values[] = $r['value'];
+
+        #dataset is in the cache, so we can skip the directory listing
+        if ($key == 'dataset') {
+            $values = array_merge($values, $datasets);
+            foreach (array_unique($datasets) as $value) {
+                $meta->addRow(array("$value"));
             }
-        }
-        foreach (array_unique($values) as $value) {
-            $meta->addRow(array("$value"));
+        # other keys we'll do the search
+        } else {
+            foreach ($dirs as $testDir) {
+                
+                $db = connect($testDir);
+                $cmd = "select key, value from metadata where key = ?";
+                $prep = $db->prepare($cmd);
+                $prep->execute(array($key));
+                $results = $prep->fetchAll();
+                
+                foreach ($results as $r) {
+                    $values[] = $r['value'];
+                }
+            }
+            foreach (array_unique($values) as $value) {
+                $meta->addRow(array("$value"));
+            }
         }
         if (count($values) > 0) {
             $tables .= $meta->write();
@@ -691,29 +762,24 @@ function displayFigures($testDir) {
 
 
 
-function summarizeTestFromCache($testDir) {
-    $db = connect($testDir);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    try {
-        $testCmd = "select entrytime,key,value from cache";
-        $prep = $db->prepare($testCmd);
-        $prep->execute();
-        $results = $prep->fetchAll();
-    } catch (PDOException $e) {
+function summarizeTestsFromCache() {
+    
+    $results = loadCache();
+    if ($results == -1) {
         return -1;
     }
-    $ret = array('npass' => 0, 'ntest' => 0);
-    $entrytime = 0;
+    
+    $ret = array();
+    #$entrytime = 0;
     foreach ($results as $r) {
-        list($entrytime, $key, $value) = array($r['entrytime'], $r['key'], $r['value']);
-        $ret[$key] = $value;
+        $test = $r['test'];
+        $ret[$test] = array('name' => $r['test'],
+                            'entrytime' => $r['entrytime'],
+                            'npass' => $r['npass'],
+                            'ntest' => $r['ntest']);
     }
-    return array(
-        'name' => $testDir,
-        'entrytime' => $entrytime,
-        'npass' => intval($ret['npass']),
-        'ntest' => intval($ret['ntest'])
-        );
+    return $ret;
+
 }
 
 
@@ -745,13 +811,13 @@ function summarizeTestByCounting($testDir) {
     return $ret;
 }
 
-function summarizeTest($testDir) {
-    $summ = summarizeTestFromCache($testDir);
-    if ($summ == -1) {
-        $summ = summarizeTestByCounting($testDir);
-    }
-    return $summ;
-}
+#function summarizeTest($testDir) {
+#    $summ = summarizeTestFromCache($testDir);
+#    if ($summ == -1) {
+#        $summ = summarizeTestByCounting($testDir);
+#    }
+#    return $summ;
+#}
 
 
 
@@ -772,6 +838,8 @@ function writeTable_SummarizeAllTests() {
     $tdAttribs = array();#"align=\"left\"", "align=\"center\"",
                        #"align=\"right\" width=\"100\"", 
                        #"align=\"left\" width=\"100\"");
+
+    $summs = summarizeTestsFromCache();
     
     $d = @dir($dir) or dir("");
     $table = new Table("width=\"100%\"");
@@ -796,7 +864,11 @@ function writeTable_SummarizeAllTests() {
             continue;
         }
 
-        $summ = summarizeTest($testDir);
+        if ($summs == -1 or !array_key_exists($testDir, $summs)) {
+            $summ = summarizeTestByCounting($testDir);
+        } else {
+            $summ = $summs[$testDir];
+        }
         list($haveMaps, $navmapFile) = haveMaps($testDir);
         $active = ($haveMaps) ? "all" : ".*";
         $testDirStr = preg_replace("/^test_${group}_/", "", $testDir);
@@ -824,10 +896,133 @@ function writeTable_SummarizeAllTests() {
     
 }
 
-function writeTable_SummarizeAllGroups() {
+
+function loadCache() {
+    $db = connect("."); #$testDir);
+
+    static $alreadyLoaded = false;
+    static $results = array();
+    
+    if ($alreadyLoaded) {
+        return $results;
+    } else {
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try {
+            $testCmd = "select entrytime,test,ntest,npass,dataset from counts;";
+            $prep = $db->prepare($testCmd);
+            $prep->execute();
+            $results = $prep->fetchAll();
+        } catch (PDOException $e) {
+            return -1;
+        }
+        $alreadyLoaded = true;
+    }
+    
+    return $results;
+}
+
+
+function getDataSetsByGroup() {
+    $results = loadCache();
+    if ($results == -1) {
+        return -1;
+    }
+    $dirs = array();
+    foreach($results as $r) {
+        $testDir = $r['test'];
+        $dataset = $r['dataset'];
+        if (!preg_match("/^test_.*/", $testDir)) {
+            continue;
+        }
+        $parts = preg_split("/_/", $testDir);
+        $group = $parts[1];
+        if (array_key_exists($group, $dirs)) {
+            $dirs[$group][] = $dataset;
+        } else {
+            $dirs[$group] = array($dataset);
+        }
+    }
+    asort($dirs);
+    return $dirs;
+}
+function getDataSets() {
+    $datasetsByGroup = getDataSetsByGroup();
+    $datasets = array();
+    foreach ($datasetsByGroup as $k=>$v) {
+        $datasets = array_merge($datasets, $v);
+    }
+    return $datasets;
+}
+
+
+function getAllTestDirs() {
+    $dirsByGroup = getAllTestDirsByGroup();
+    $dirs = array();
+    foreach ($dirsByGroup as $k=>$v) {
+        $dirs = array_merge($dirs, $v);
+    }
+    return $dirs;
+}
+function getAllTestDirsByGroupFromCache() {
+
+    $results = loadCache();
+    if ($results == -1) {
+        return -1;
+    }
+    
+    $dirs = array();
+    foreach($results as $r) {
+        $testDir = $r['test'];
+        if (!preg_match("/^test_.*/", $testDir)) {
+            continue;
+        }
+        $parts = preg_split("/_/", $testDir);
+        $group = $parts[1];
+        if (array_key_exists($group, $dirs)) {
+            $dirs[$group][] = $testDir;
+        } else {
+            $dirs[$group] = array($testDir);
+        }
+    }
+    asort($dirs);
+    return $dirs;
+}
+function getAllTestDirsByGroup() {
+
+    $dirs = getAllTestDirsByGroupFromCache();
+    if ($dirs != -1) {
+        return $dirs;
+    }
+    
     $dir = "./";
+    $d = @dir($dir) or dir("");
+    $dirs = array();
+    while(false !== ($testDir = $d->read())) {
+        if (!preg_match("/^test_.*/", $testDir)) {
+            continue;
+        }
+        $parts = preg_split("/_/", $testDir);
+        $group = $parts[1];
+        if (array_key_exists($group, $dirs)) {
+            $dirs[$group][] = $testDir;
+        } else {
+            $dirs[$group] = array($testDir);
+        }
+    }
+    asort($dirs);
+    return $dirs;
+}
+
+function writeTable_SummarizeAllGroups() {
 
     $groups = getGroupList();
+    #echo "have groups<br/>";
+
+    $summs = summarizeTestsFromCache();
+    #echo "have summs<br/>";
+    
+    $dirs = getAllTestDirsByGroup();
+    #echo "have testdirs<br/>";
     
     ## go through all directories and look for .summary files
     $table = new Table("width=\"100%\"");
@@ -839,28 +1034,29 @@ function writeTable_SummarizeAllGroups() {
         $nTestSetsPass = 0;
         $nTest = 0;
         $nPass = 0;
-        
-        $d = @dir($dir) or dir("");
-        $dirs = array();
-        while(false !== ($testDir = $d->read())) {
-            $dirs[] = $testDir;
-        }
-        asort($dirs);
-        
+                
         $lastUpdate = 0;
-        $d = @dir($dir) or dir("");
+        #$d = @dir($dir) or dir("");
         #while(false !== ($testDir = $d->read())) {
-        foreach ($dirs as $testDir) {
-            if (!preg_match("/^test_".$group."_/", $testDir)) {
-                continue;
-            }
+        if (!array_key_exists($group, $dirs)) {
+            continue;
+        }
+
+        #echo "$group<br/>";
+        foreach ($dirs[$group] as $testDir) {
+
             # must deal with default group "" specially
             $parts = preg_split("/_/", $testDir);
             if (strlen($parts[1]) > 0 and $group == "") {
                 continue;
             }
-            
-            $summ = summarizeTest($testDir);
+
+            if ($summs == -1 or !array_key_exists($testDir, $summs)) {
+                $summ = summarizeTestByCounting($testDir);
+            } else {
+                $summ = $summs[$testDir];
+            }
+
             $nTestSets += 1;
             $nTest += $summ['ntest'];
             $nPass += $summ['npass'];
