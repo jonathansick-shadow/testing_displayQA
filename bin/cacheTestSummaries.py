@@ -88,7 +88,10 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
         group, alias, label = testSetInfo[i]
         ts = dispQa.TestSet(label=label, group=group, alias=alias)
         ntest, npass, dataset = ts.updateCounts(increment=[int(ntestAdjust), int(npassAdjust)])
-        print "%12s %24s " % (group, label), "  ", "npass/ntest = %d/%d  %s" % (npass, ntest, dataset)
+        if len(group.strip()) == 0:
+            group = "top-level"
+        print "%-12s %-24s " % (group, label)
+        print "  ", "npass/ntest = %d/%d  %s" % (npass, ntest, dataset)
 
 
 #############################################################

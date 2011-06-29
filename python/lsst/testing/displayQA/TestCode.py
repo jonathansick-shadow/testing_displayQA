@@ -184,14 +184,14 @@ class TestSet(object):
         value, lo, hi = map(float, [value, lo, hi])
     
         cmp = 0   #true;  # default true (ie. no limits were set)
-        if (lo and hi):
+        if ((not lo is None) and (not hi is None)):
             if (value < lo):
                 cmp = -1
             elif (value > hi):
                 cmp = 1
-        elif (lo and (hi is None) and (value < lo)):
+        elif ((not lo is None) and (hi is None) and (value < lo)):
             cmp = -1
-        elif ((lo is None) and hi and (value > hi)):
+        elif ((lo is None) and (not hi is None) and (value > hi)):
             cmp = 1
         return cmp
 
@@ -201,14 +201,16 @@ class TestSet(object):
         self.curs.execute(sql)
         results = self.curs.fetchall()
 
-        
-        resultsDict = {'ntest' : len(results)}
+        # count the passed tests
         npass = 0
+        ntest = 0
         for r in results:
-            if not self._verifyTest(*r):
+            ntest += 1
+            cmp = self._verifyTest(*r)
+            if cmp == 0:
                 npass += 1
-        resultsDict['npass'] = npass
 
+        # get the dataset from the metadata
         sql = "select key,value from metadata"
         self.curs.execute(sql)
         metaresults = self.curs.fetchall()
@@ -218,7 +220,7 @@ class TestSet(object):
             if k == 'dataset':
                 dataset = v
         
-        return resultsDict['ntest'], resultsDict['npass'], dataset
+        return ntest, npass, dataset
 
 
     def _writeCounts(self, ntest, npass, dataset="unknown"):
