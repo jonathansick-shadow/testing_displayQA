@@ -65,7 +65,7 @@ class Test(object):
 class TestSet(object):
     """A container for Test objects and associated matplotlib figures."""
     
-    def __init__(self, label=None, group="", clean=False, useCache=False, alias=None):
+    def __init__(self, label=None, group="", clean=False, useCache=False, alias=None, wwwCache=False):
         """
         @param label  A name for this testSet
         @param group  A category this testSet belongs to
@@ -82,6 +82,7 @@ class TestSet(object):
         self.conn = None
 
         self.useCache = useCache
+        self.wwwCache = wwwCache
 
         wwwRootDir = os.environ['WWW_ROOT']
         qaRerun = os.environ['WWW_RERUN']
@@ -129,13 +130,14 @@ class TestSet(object):
         self.tests = []
 
         # create the cache table
-        self.countsTable = "counts"
-        self.countKeys = ["test text", "ntest integer", "npass integer", "dataset text"]
-        keys = self.stdKeys + self.countKeys
-        cmd = "create table if not exists " + self.countsTable + " ("+",".join(keys)+")"
-        curs = self.cacheConnect()
-        curs.execute(cmd)
-        self.cacheClose()
+        if self.wwwCache:
+            self.countsTable = "counts"
+            self.countKeys = ["test text", "ntest integer", "npass integer", "dataset text"]
+            keys = self.stdKeys + self.countKeys
+            cmd = "create table if not exists " + self.countsTable + " ("+",".join(keys)+")"
+            curs = self.cacheConnect()
+            curs.execute(cmd)
+            self.cacheClose()
         
 
     def cacheConnect(self):
@@ -284,13 +286,14 @@ class TestSet(object):
 
     def updateCounts(self, dataset=None, increment=[0,0]):
         ntest, npass = increment
-        
+
         ntestOrig, npassOrig, datasetOrig = self._readCounts()
         ntest = int(ntestOrig) + ntest
         npass = int(npassOrig) + npass
         if dataset is None:
             dataset = datasetOrig
-        self._writeCounts(ntest, npass, dataset)
+        if self.wwwCache:
+            self._writeCounts(ntest, npass, dataset)
 
         # return the new settings
         return ntest, npass, dataset
