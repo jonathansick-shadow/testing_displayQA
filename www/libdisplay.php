@@ -706,7 +706,7 @@ function writeMappedFigures($suffix="map") {
         if ($suffix == 'navmap') {
             $img->addRow(array("Show <a href=\"summary.php?test=$testDir&active=all\">all</a>"));
         }
-        $img->addRow(array("<center>".$imgDiv->write()."</center>"));
+        $img->addRow(array($imgDiv->write() )); #"<center>".$imgDiv->write()."</center>"));
         $img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));
         $img->addRow(array("<b>$f</b>: timestamp=$mtime"));
         $out .= $img->write();
@@ -767,7 +767,7 @@ function writeFigures() {
         }
         
         $img = new Table();
-        $img->addRow(array("<center>$imgTag</center>"));
+        $img->addRow(array("$imgTag")); #<center>$imgTag</center>"));
         $img->addRow(array("<b>Figure 2.$j</b>:".$result));
         $img->addRow(array("<b>$f</b>: timestamp=$mtime"));
         $out .= $img->write();

@@ -78,6 +78,10 @@ def main(qaName, wwwRoot=None, force=False):
                     print "    ", dest
                     print "Exiting (nothing done)."
                     sys.exit()
+            else:
+                fp = open(os.path.join(dest, "version"), 'w')
+                fp.write("%s\n" % version)
+                fp.close()
             
     else:
         os.mkdir(dest)
