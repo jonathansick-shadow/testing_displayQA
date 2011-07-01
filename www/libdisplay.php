@@ -82,6 +82,57 @@ function getDefaultH1() {
 
 
 
+function getTestLinksThisGroup() {
+    $group = getGroup();
+    $active = getActive();
+
+    $results = loadCache();
+
+    $testList = array();
+    if ($results != -1) {
+        foreach ($results as $r) {
+            $testList[] = $r['test'];
+        }
+    } else {
+        $dir = "./";
+        $d = @dir($dir) or dir("");
+        while(false !== ($testDir = $d->read())) {
+            if (preg_match("/test_/", $testDir)) {
+                $testList[] = $testDir;
+            }
+        }
+    }
+        
+    
+    $testDirs = array();
+    foreach ($testList as $t) {
+        if (preg_match("/test_${group}_/", $t)) {
+            $parts = preg_split("/_/", $t);
+            if (count($parts) > 2) {
+                #$testDirs[] = $t;
+                $testName = $parts[2];
+                $subparts = preg_split("/\./", $testName);
+                $label = substr($subparts[1], 0, 4);
+                if (count($subparts) > 2) {
+                    $label .= ".".$subparts[2];
+                }
+                $testDirs[$label] = $t;
+            }
+        }
+    }
+    ksort($testDirs);
+    
+    $table = new Table("width=\"100%\"");
+    $row = array();
+    foreach ($testDirs as $label=>$testDir) {
+        $link = "<a href=\"summary.php?test=".$testDir."&active=$active\">".$label."</a>";
+        $row[] = $link;
+    }
+    $table->addRow($row);
+    return $table->write();
+}
+
+
 function getDefaultTest() {
 
     $testDir = "";

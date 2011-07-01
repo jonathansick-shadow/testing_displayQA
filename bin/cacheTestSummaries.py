@@ -86,7 +86,7 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
 
     for i in range(len(testSetInfo)):
         group, alias, label = testSetInfo[i]
-        ts = dispQa.TestSet(label=label, group=group, alias=alias)
+        ts = dispQa.TestSet(label=label, group=group, alias=alias, wwwCache=True)
         ntest, npass, dataset = ts.updateCounts(increment=[int(ntestAdjust), int(npassAdjust)])
         if len(group.strip()) == 0:
             group = "top-level"
