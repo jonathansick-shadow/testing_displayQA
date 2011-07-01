@@ -183,7 +183,12 @@ class TestSet(object):
 
     def _verifyTest(self, value, lo, hi):
 
-        value, lo, hi = map(float, [value, lo, hi])
+        if not value is None:
+            value = float(value)
+        if not lo is None:
+            lo = float(lo)
+        if not hi is None:
+            hi = float(hi)
     
         cmp = 0   #true;  # default true (ie. no limits were set)
         if ((not lo is None) and (not hi is None)):
