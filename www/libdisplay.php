@@ -133,6 +133,20 @@ function getTestLinksThisGroup() {
 }
 
 
+function getShowHide() {
+    $show = "0";
+    if (array_key_exists('show', $_GET)) {
+        $show = $_GET['show'];
+        setcookie('displayQA_show', $show);
+    } elseif (array_key_exists('displayQA_show', $_COOKIE)) {
+        $show = $_COOKIE['displayQA_show'];
+    }
+    if ($show != "0" and $show != "1") {
+        $show = "0";
+    }
+    return $show;
+}
+
 function getDefaultTest() {
 
     $testDir = "";
@@ -588,6 +602,10 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
     
     foreach ($keys as $key) {
 
+        if (preg_match("/[dD]escription/", $key)) {
+            continue;
+        } 
+        
         $meta = new Table();
         $meta->addHeader(array("$key"));
         $values = array();
@@ -628,6 +646,40 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
     
 }
 
+
+function getDescription() {
+
+    $show = getShowHide();
+    
+    $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
+    $active = getActive();
+    $db = connect($testDir);
+    $cmd = "select key, value from metadata";
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $results = $prep->fetchAll();
+
+    $description = "";
+    foreach ($results as $r) {
+        if (preg_match("/[dD]escription/", $r['key'])) {
+            $description = $r['value'];
+        }
+    }
+
+    $out = "";
+    if ($show == "1") {
+        $link = "<a href=\"summary.php?test=$testDir&active=$active&show=0\">[hide description]</a>";
+        $out = $link . " ". $description . "<br/>\n";
+    } else {
+        $link = "<a href=\"summary.php?test=$testDir&active=$active&show=1\">[show description]</a><br/>\n";
+        $out = $link;
+    }
+    return $out;
+}
+
 function writeTable_metadata() {
 
     $testDir = getDefaultTest();
@@ -645,6 +697,9 @@ function writeTable_metadata() {
     $results = $prep->fetchAll();
 
     foreach ($results as $r) {
+        if (preg_match("/[dD]escription/", $r['key'])) {
+            continue;
+        } 
         $meta->addRow(array($r['key'].":", $r['value']));
     }
     $meta->addRow(array("Active:", $active));
