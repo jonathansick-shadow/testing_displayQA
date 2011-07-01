@@ -7,6 +7,7 @@ import stat
 import shutil
 import eups
 import sqlite
+import errno
 import cPickle as pickle
 
 import LogConverter as logConv
@@ -103,7 +104,11 @@ class TestSet(object):
             shutil.rmtree(self.wwwDir)
 
         if not os.path.exists(self.wwwDir):
-            os.mkdir(self.wwwDir)
+            try:
+                os.mkdir(self.wwwDir)
+            except os.error, e:  # as exc: # Python >2.5
+                if e.errno != errno.EEXIST:
+                    raise
 
 
         # connect to the db and create the tables
