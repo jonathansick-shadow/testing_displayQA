@@ -85,9 +85,11 @@ function getDefaultH1() {
 function getTestLinksThisGroup() {
     $group = getGroup();
     $active = getActive();
-
+    $allGroups = getGroupList();
     $results = loadCache();
+    $currTest = getDefaultTest();
 
+    # handle possible failure of the cache load
     $testList = array();
     if ($results != -1) {
         foreach ($results as $r) {
@@ -102,8 +104,33 @@ function getTestLinksThisGroup() {
             }
         }
     }
+
+    $testParts = preg_split("/_/", $currTest);
+    $testName = "";
+    if (count($testParts) > 2) {
+        $testName = $testParts[2];
+    }
+
+    # get the prev/next group
+    $groupDirs = array();
+    $groupNames = array_keys($allGroups);
+
+    $index = array_search($group, $groupNames);
+    if ($index > 0) {
+        $prev = $groupNames[$index-1];
+        $groupDirs["<<- prev-group ($prev)"] = array($prev, "test_${prev}_${testName}");
+    } else {
+        $groupDirs["<<- prev-group (none)"] = array("None", "");
+    }
+    if ($index < count($groupNames)-1) {
+        $next = $groupNames[$index+1];
+        $groupDirs["($next) next-group ->>"] = array($next, "test_${next}_${testName}");
+    } else {
+        $groupDirs["(none) next-group ->>"] = array("None", "");
+    }
         
-    
+
+    # get the tests
     $testDirs = array();
     foreach ($testList as $t) {
         if (preg_match("/test_${group}_/", $t)) {
@@ -121,7 +148,10 @@ function getTestLinksThisGroup() {
         }
     }
     ksort($testDirs);
-    
+
+
+
+    # make the table
     $table = new Table("width=\"100%\"");
     $row = array();
     foreach ($testDirs as $label=>$testDir) {
@@ -129,7 +159,22 @@ function getTestLinksThisGroup() {
         $row[] = $link;
     }
     $table->addRow($row);
-    return $table->write();
+
+    $tableG = new Table("width=\"100%\"");
+    $row = array();
+    foreach ($groupDirs as $label=>$groupDirInfo) {
+        list($g, $groupDir) = $groupDirInfo;
+        if ($groupDir) {
+            $link = "<a href=\"summary.php?test=".$groupDir."&active=$active&group=$g\">".$label."</a>";
+        } else {
+            $link = "$label";
+        }
+        $row[] = $link;
+    }
+    $tableG->addRow($row);
+
+
+    return $table->write() . $tableG->write();
 }
 
 
