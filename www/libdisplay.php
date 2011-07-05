@@ -120,20 +120,57 @@ function getTestLinksThisGroup() {
     
     $index = array_search($group, $groupNames);
 
+    $space = "<br/>";
     if ($index > $index0) {
         $prev = $groupNames[$index-1];
-        $groupDirs["<<- prev-group ($prev)"] = array($prev, "test_${prev}_${testName}");
+        $groupDirs["<<- prev-group$space($prev)"] = array($prev, "test_${prev}_${testName}");
     } else {
-        $groupDirs["<<- prev-group (none)"] = array("None", "");
+        $groupDirs["<<- prev-group$space(none)"] = array("None", "");
     }
     if ($index < count($groupNames)-1) {
         $next = $groupNames[$index+1];
-        $groupDirs["($next) next-group ->>"] = array($next, "test_${next}_${testName}");
+        $groupDirs["next-group ->>$space($next)"] = array($next, "test_${next}_${testName}");
     } else {
-        $groupDirs["(none) next-group ->>"] = array("None", "");
+        $groupDirs["next-group ->>$space($next)"] = array("None", "");
     }
-        
 
+    $filterDirs = array();
+    if (preg_match("/-[ugrizy]$/", $group)) {
+        $thisFilter = substr($group, -1);
+        
+        $havePrev = false;
+        for ($i = $index-1; $i>-1; $i--) {
+            $gname = $groupNames[$i];
+            $cmpFilter = substr($gname, -1);
+            if ($thisFilter == $cmpFilter) {
+                $filterDirs["<<- prev-$cmpFilter$space($gname)"] = array($gname, "test_${gname}_${testName}");
+                $havePrev = true;
+                break;
+            }
+        }
+
+        if (!$havePrev) {
+            $filterDirs["<<- prev-$thisFilter$space(none)"] = array("None", "");
+        }
+        
+        $haveNext = false;
+        for ($i = $index+1; $i< count($groupNames); $i++) {
+            $gname = $groupNames[$i];
+            $cmpFilter = substr($gname, -1);
+            if ($thisFilter == $cmpFilter) {
+                $filterDirs["next-$cmpFilter ->>$space($gname)"] = array($gname, "test_${gname}_${testName}");
+                $haveNext = true;
+                break;
+            }
+        }
+
+        if (!$haveNext) {
+            $filterDirs["next-$thisFilter ->>$space(none)"] = array("None", "");
+        }
+        
+                
+    }
+    
     # get the tests
     $testDirs = array();
     foreach ($testList as $t) {
@@ -166,7 +203,8 @@ function getTestLinksThisGroup() {
 
     $tableG = new Table("width=\"100%\"");
     $row = array();
-    foreach ($groupDirs as $label=>$groupDirInfo) {
+    $navDirs = array_merge($groupDirs, $filterDirs);
+    foreach ($navDirs as $label=>$groupDirInfo) {
         list($g, $groupDir) = $groupDirInfo;
         if ($groupDir) {
             $link = "<a href=\"summary.php?test=".$groupDir."&active=$active&group=$g\">".$label."</a>";
