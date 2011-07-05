@@ -115,8 +115,12 @@ function getTestLinksThisGroup() {
     $groupDirs = array();
     $groupNames = array_keys($allGroups);
 
+    # handle the unnamed group possibility
+    $index0 = ($groupNames[0] === "") ? 1 : 0;
+    
     $index = array_search($group, $groupNames);
-    if ($index > 0) {
+
+    if ($index > $index0) {
         $prev = $groupNames[$index-1];
         $groupDirs["<<- prev-group ($prev)"] = array($prev, "test_${prev}_${testName}");
     } else {
