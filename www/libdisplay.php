@@ -131,7 +131,7 @@ function getTestLinksThisGroup() {
         $next = $groupNames[$index+1];
         $groupDirs["next-group ->>$space($next)"] = array($next, "test_${next}_${testName}");
     } else {
-        $groupDirs["next-group ->>$space($next)"] = array("None", "");
+        $groupDirs["next-group ->>$space(none)"] = array("None", "");
     }
 
     $filterDirs = array();
