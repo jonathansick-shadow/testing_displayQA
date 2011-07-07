@@ -173,6 +173,7 @@ function getTestLinksThisGroup() {
     
     # get the tests
     $testDirs = array();
+    $testNames = array();
     foreach ($testList as $t) {
         if (preg_match("/test_${group}_/", $t)) {
             $parts = preg_split("/_/", $t);
@@ -182,9 +183,10 @@ function getTestLinksThisGroup() {
                 $subparts = preg_split("/\./", $testName);
                 $label = substr($subparts[1], 0, 4);
                 if (count($subparts) > 2) {
-                    $label .= ".".$subparts[2];
+                    $label .= "<br/>".$subparts[2];
                 }
                 $testDirs[$label] = $t;
+                $testNames[$label] = $testName;
             }
         }
     }
@@ -196,7 +198,8 @@ function getTestLinksThisGroup() {
     $table = new Table("width=\"100%\"");
     $row = array();
     foreach ($testDirs as $label=>$testDir) {
-        $link = "<a href=\"summary.php?test=".$testDir."&active=$active\">".$label."</a>";
+        $testName = $testNames[$label];
+        $link = "<a href=\"summary.php?test=".$testDir."&active=$active\" title=\"$testName\">".$label."</a>";
         $row[] = $link;
     }
     $table->addRow($row);

@@ -9,6 +9,7 @@ import eups
 import sqlite
 import errno
 import cPickle as pickle
+import shelve
 
 import LogConverter as logConv
 
@@ -185,6 +186,27 @@ class TestSet(object):
                 fp.close()
         return data
 
+
+    def shelve(self, label, dataDict):
+        if self.useCache:
+            filename = os.path.join(self.wwwDir, label+".shelve")
+            shelf = shelve.open(filename)
+            for k,v in dataDict.items():
+                shelf[k] = v
+            shelf.close()
+
+    def unshelve(self, label, default=None):
+        data = default
+        if self.useCache:
+            filename = os.path.join(self.wwwDir, label+".shelve")
+            if os.path.exists(filename):
+                shelf = shelve.open(filename)
+                for k,v in shelf.items():
+                    data[k] = v
+                shelf.close()
+        return data
+
+            
 
     def _verifyTest(self, value, lo, hi):
 
