@@ -117,7 +117,7 @@ function getTestLinksThisGroup($page) {
     $groupNames = array_keys($allGroups);
 
     # handle the unnamed group possibility
-    $index0 = ($groupNames[0] === "") ? 1 : 0;
+    $index0 = ($groupNames[0] === "" and (count($groupNames) > 1) ) ? 1 : 0;
     
     $index = array_search($group, $groupNames);
 
