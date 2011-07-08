@@ -10,7 +10,7 @@ include_once("libdisplay.php");
 $menu = new Menu();
 $page = new Page(getDefaultTitle(), getDefaultH1(), $menu);
 
-$page->appendContent(getTestLinksThisGroup()."<br/>");
+$page->appendContent(getTestLinksThisGroup('summary')."<br/>");
 $page->appendContent("<h2>".getDefaultTest()."</h2><br/>\n");
 $page->appendContent(getDescription()."<br/>\n");
 $mapFigs = writeMappedFigures();

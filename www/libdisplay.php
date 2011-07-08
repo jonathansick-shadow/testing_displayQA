@@ -82,7 +82,8 @@ function getDefaultH1() {
 
 
 
-function getTestLinksThisGroup() {
+function getTestLinksThisGroup($page) {
+    
     $group = getGroup();
     $active = getActive();
     $allGroups = getGroupList();
@@ -120,6 +121,8 @@ function getTestLinksThisGroup() {
     
     $index = array_search($group, $groupNames);
 
+    #######
+    # straight group advancing
     $space = "<br/>";
     if ($index > $index0) {
         $prev = $groupNames[$index-1];
@@ -134,6 +137,8 @@ function getTestLinksThisGroup() {
         $groupDirs["next-group ->>$space(none)"] = array("None", "");
     }
 
+    #######
+    # filter advancing
     $filterDirs = array();
     if (preg_match("/-[ugrizy]$/", $group)) {
         $thisFilter = substr($group, -1);
@@ -170,8 +175,9 @@ function getTestLinksThisGroup() {
         
                 
     }
+
     
-    # get the tests
+    # get the tests for this group
     $testDirs = array();
     $testNames = array();
     foreach ($testList as $t) {
@@ -193,24 +199,31 @@ function getTestLinksThisGroup() {
     ksort($testDirs);
 
 
-
-    # make the table
-    $table = new Table("width=\"100%\"");
-    $row = array();
-    foreach ($testDirs as $label=>$testDir) {
-        $testName = $testNames[$label];
-        $link = "<a href=\"summary.php?test=".$testDir."&active=$active\" title=\"$testName\">".$label."</a>";
-        $row[] = $link;
+    $outString = "";
+    
+    # make the table for the test links
+    if ($page == 'summary') {
+        $table = new Table("width=\"100%\"");
+        $row = array();
+        foreach ($testDirs as $label=>$testDir) {
+            $testName = $testNames[$label];
+            $link = "<a href=\"summary.php?test=".$testDir."&active=$active&group=$group\" title=\"$testName\">".$label."</a>";
+            $row[] = $link;
+        }
+        $table->addRow($row);
+        $outString .= $table->write();
     }
-    $table->addRow($row);
 
+    # make the table for the next/prev group links
     $tableG = new Table("width=\"100%\"");
     $row = array();
     $navDirs = array_merge($groupDirs, $filterDirs);
     foreach ($navDirs as $label=>$groupDirInfo) {
         list($g, $groupDir) = $groupDirInfo;
         if ($groupDir) {
-            $link = "<a href=\"summary.php?test=".$groupDir."&active=$active&group=$g\">".$label."</a>";
+            $link = ($page=='group') ?
+                "<a href=\"group.php?group=$g\" title=\"$g\">".$label."</a>":
+                "<a href=\"summary.php?test=".$groupDir."&active=$active&group=$g\">".$label."</a>";
         } else {
             $link = "$label";
         }
@@ -218,8 +231,9 @@ function getTestLinksThisGroup() {
     }
     $tableG->addRow($row);
 
+    $outString .= $tableG->write();
 
-    return $table->write() . $tableG->write();
+    return $outString;
 }
 
 
