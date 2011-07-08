@@ -1066,15 +1066,16 @@ function writeTable_SummarizeAllTests() {
     }
     sort($dirs);
 
-    $tdAttribs = array();#"align=\"left\"", "align=\"center\"",
-                       #"align=\"right\" width=\"100\"", 
-                       #"align=\"left\" width=\"100\"");
+    $tdAttribs = array("align=\"left\"", "align=\"left\"",
+                       "align=\"right\"","align=\"right\"", "align=\"right\"");
 
     $summs = summarizeTestsFromCache();
     
     $d = @dir($dir) or dir("");
     $table = new Table("width=\"100%\"");
-    $table->addHeader(array("Test", "mtime", "No. Tests", "No. Passed", "Fail Rate"));
+
+    $head = array("Test", "mtime", "No. Tests", "Pass/Fail", "Fail Rate");
+    $table->addHeader($head, $tdAttribs);
     #while(false !== ($testDir = $d->read())) {
     $summAll = 0;
     $passAll = 0;
@@ -1105,7 +1106,8 @@ function writeTable_SummarizeAllTests() {
         $testDirStr = preg_replace("/^test_${group}_/", "", $testDir);
         $testLink = "<a href=\"summary.php?test=${testDir}&active=$active\">$testDirStr</a>";
 
-        $passLink = tfColor($summ['npass'], ($summ['npass']==$summ['ntest']));
+        $nFail = $summ['ntest'] - $summ['npass'];
+        $passLink = tfColor($summ['npass'] . " / " . $nFail, ($summ['npass']==$summ['ntest']));
         $failRate = "n/a";
         if ($summ['ntest'] > 0) {
             $failRate = 1.0 - 1.0*$summ['npass']/$summ['ntest'];
@@ -1122,7 +1124,9 @@ function writeTable_SummarizeAllTests() {
         $summAll += $summ['ntest'];
         $passAll += $summ['npass'];
     }
-    $table->addRow(array("Total", "", $summAll, $passAll, sprintf("%.3f", 1.0 - $passAll/($summAll ? $summAll : 1))));
+    $failAll = $summAll - $passAll;
+    $table->addRow(array("Total", "", $summAll, $passAll." / ".$failAll,
+                         sprintf("%.3f", 1.0 - $passAll/($summAll ? $summAll : 1))), $tdAttribs);
     return $table->write();
     
 }
@@ -1267,8 +1271,13 @@ function writeTable_SummarizeAllGroups() {
     ## go through all directories and look for .summary files
     $table = new Table("width=\"100%\"");
     #$tdAtt = array();
-    $table->addHeader(array("No.", "Test", "mtime", "TestSets", "TestSets Passed", "Tests", "Tests Passed", "Fail Rate"));
-
+    $head= array("No.", "Test", "mtime", "TestSets", "Pass/Fail", "Tests", "Pass/Fail", "Fail Rate");
+    $tdAttribs = array("align=\"left\"", "align=\"left\"", "align=\"left\"",
+                       "align=\"right\"", "align=\"right\"",
+                       "align=\"right\"", "align=\"right\"",
+                       "align=\"right\"" );
+    
+    $table->addHeader($head, $tdAttribs);
     $iGroup = 1;
     foreach ($groups as $group=>$n) {
 
@@ -1322,7 +1331,8 @@ function writeTable_SummarizeAllGroups() {
             $testLink = "<a href=\"group.php?group=$group\">$group</a>";
         }
 
-        $passLink = tfColor($nPass, ($nPass==$nTest));
+        $nFail = $nTest - $nPass;
+        $passLink = tfColor("$nPass / $nFail", ($nPass==$nTest));
         $failRate = "n/a";
         if ($nTest > 0) {
             $failRate = 1.0 - 1.0*$nPass/$nTest;
@@ -1333,9 +1343,11 @@ function writeTable_SummarizeAllGroups() {
         } else {
             $timestampStr = "n/a";
         }
-        
-        $table->addRow(array($iGroup, $testLink, $timestampStr,
-                             $nTestSets, $nTestSetsPass, $nTest, $passLink, $failRate));
+
+        $nTestSetsFail = $nTestSets - $nTestSetsPass;
+        $row = array($iGroup, $testLink, $timestampStr,
+                     $nTestSets, "$nTestSetsPass / $nTestSetsFail", $nTest, $passLink, $failRate);
+        $table->addRow($row, $tdAttribs);
         $iGroup += 1;
     }
     return $table->write();
