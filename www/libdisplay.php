@@ -1281,6 +1281,27 @@ function writeTable_SummarizeAllGroups() {
     
     $dirs = getAllTestDirsByGroup();
     #echo "have testdirs<br/>";
+
+    $specialGroups = array(
+        ".*1-.$" => array(),
+        ".*0-.$" => array(),
+        ".*-u$" => array(),
+        ".*-g$" => array(),
+        ".*-r$" => array(),
+        ".*-i$" => array(),
+        ".*-z$" => array(),
+        ".*-y$" => array()
+        );
+    $specialGroupLabels = array(
+        ".*1-.$" => "cloud",
+        ".*0-.$" => "cloudless",
+        ".*-u$" => "all u",
+        ".*-g$" => "all g",
+        ".*-r$" => "all r",
+        ".*-i$" => "all i",
+        ".*-z$" => "all z",
+        ".*-y$" => "all y"
+        );
     
     ## go through all directories and look for .summary files
     $rows = array();
@@ -1362,8 +1383,42 @@ function writeTable_SummarizeAllGroups() {
                      $nTestSets, "$nTestSetsPass / $nTestSetsFail", $nTest, $passLink, $failRate);
         $rows[] = $row;
         $iGroup += 1;
+
+
+        # see if this is a special group
+        foreach ($specialGroups as $sg => $arr) {
+            if (preg_match("/$sg/", $group)) {
+                if (count($arr) == 0) {
+                    $arr = array(0, 0, 0, 0, 0);
+                }
+                $arr[0] += $nTestSets;
+                $arr[1] += $nTestSetsPass;
+                $arr[2] += $nTest;
+                $arr[3] += $nPass;
+                $arr[4] += 1;
+                $specialGroups[$sg] = $arr;
+                #break;
+            }
+        }
     }
 
+    $sgRows = array();
+    foreach ($specialGroups as $sg => $arr) {
+        if (count($arr) == 0) {
+            continue;
+            #$arr = array(0, 0, 0, 0);
+        }
+        list($nTestSets, $nTestSetsPass, $nTest, $nPass, $nMatch) = $arr;
+        $nTestSetsFail = $nTestSets - $nTestSetsPass;
+        $nFail = $nTest - $nPass;
+        $failRate = ($nTest > 0) ? sprintf("%.3f", 1.0*$nFail/$nTest) : "n/a";
+        $passLink = tfColor("$nPass / $nFail", ($nPass==$nTest));
+        
+        $row = array("n=".$nMatch, $specialGroupLabels[$sg], "n/a",
+                     $nTestSets, "$nTestSetsPass / $nTestSetsFail", $nTest, $passLink, $failRate);
+        $sgRows[] = $row;
+    }
+    $sgRows[] = array("&nbsp;", "", "", "", "", "", "", "");
     
     $table = new Table("width=\"100%\"");
     #$tdAtt = array();
@@ -1375,6 +1430,9 @@ function writeTable_SummarizeAllGroups() {
 
     
     $table->addHeader($head, $tdAttribs);
+    foreach ($sgRows as $row) {
+        $table->addRow($row, $tdAttribs);
+    }
     foreach ($rows as $row) {
         $table->addRow($row, $tdAttribs);
     }
