@@ -139,7 +139,7 @@ class TestSet(object):
         if self.wwwCache:
             self.countsTable = "counts"
             self.countKeys = ["test text", "ntest integer", "npass integer", "dataset text",
-                              "oldest timestamp", "newest timestamp"]
+                              "oldest timestamp", "newest timestamp", "extras text"]
             keys = self.stdKeys + self.countKeys
             cmd = "create table if not exists " + self.countsTable + " ("+",".join(keys)+")"
             curs = self.cacheConnect()
@@ -232,10 +232,15 @@ class TestSet(object):
 
 
     def _readCounts(self):
-        sql = "select entrytime, value,lowerlimit,upperlimit from summary"
+        sql = "select label,entrytime,value,lowerlimit,upperlimit from summary"
         self.curs.execute(sql)
         results = self.curs.fetchall()
 
+        # key: [regex, displaylabel, value]
+        extras = {
+            'fwhm': [".*fwhm.*", "&lt;fwhm&gt;", []]
+            }
+        
         # count the passed tests
         npass = 0
         ntest = 0
@@ -243,8 +248,9 @@ class TestSet(object):
         newest = 0
         for r in results:
             ntest += 1
-            entrytime = r[0]
-            vlu = r[1:]
+            label = r[0]
+            entrytime = r[1]
+            vlu = r[2:]
             cmp = self._verifyTest(*vlu)
             if cmp == 0:
                 npass += 1
@@ -253,6 +259,17 @@ class TestSet(object):
             if entrytime > newest:
                 newest = entrytime
 
+            for k, v in extras.items():
+                reg, displabel, value = v
+                if re.search(reg, label):
+                    extras[k][2].append(vlu[0])
+
+        # encode any extras
+        extraStr = ""
+        if len(extras['fwhm'][2]) > 0:
+            fwhmMean = "%s:%.2f" % (extras['fwhm'][1], numpy.mean(extras['fwhm'][2]))
+            extraStr = fwhmMean
+        
         # get the dataset from the metadata
         sql = "select key,value from metadata"
         self.curs.execute(sql)
@@ -263,10 +280,10 @@ class TestSet(object):
             if k == 'dataset':
                 dataset = v
         
-        return ntest, npass, dataset, oldest, newest
+        return ntest, npass, dataset, oldest, newest, extraStr
 
 
-    def _writeCounts(self, ntest, npass, dataset="unknown", oldest=None, newest=None):
+    def _writeCounts(self, ntest, npass, dataset="unknown", oldest=None, newest=None, extras=""):
         """Cache summary info for this TestSet
 
 	@param *args A dict of key,value pairs, or a key and value
@@ -274,7 +291,7 @@ class TestSet(object):
 
         curs = self.cacheConnect()
         keys = [x.split()[0] for x in self.countKeys]
-        replacements = dict( zip(keys, [self.testDir, ntest, npass, dataset, oldest, newest]))
+        replacements = dict( zip(keys, [self.testDir, ntest, npass, dataset, oldest, newest, extras]))
         self._insertOrUpdate(self.countsTable, replacements, ['test'], cache=True)
         self.cacheClose()
         
@@ -328,16 +345,16 @@ class TestSet(object):
     def updateCounts(self, dataset=None, increment=[0,0]):
         ntest, npass = increment
 
-        ntestOrig, npassOrig, datasetOrig, oldest, newest = self._readCounts()
+        ntestOrig, npassOrig, datasetOrig, oldest, newest, extras = self._readCounts()
         ntest = int(ntestOrig) + ntest
         npass = int(npassOrig) + npass
         if dataset is None:
             dataset = datasetOrig
         if self.wwwCache:
-            self._writeCounts(ntest, npass, dataset, oldest, newest)
+            self._writeCounts(ntest, npass, dataset, oldest, newest, extras)
 
         # return the new settings
-        return ntest, npass, dataset, oldest, newest
+        return ntest, npass, dataset, oldest, newest, extras
         
     def addTest(self, *args, **kwargs):
         """Add a test to this testing suite.

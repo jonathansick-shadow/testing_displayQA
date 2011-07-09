@@ -88,7 +88,7 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
     for i in range(len(testSetInfo)):
         group, alias, label = testSetInfo[i]
         ts = dispQa.TestSet(label=label, group=group, alias=alias, wwwCache=True)
-        ntest, npass, dataset, oldest, newest = \
+        ntest, npass, dataset, oldest, newest, extras = \
                ts.updateCounts(increment=[int(ntestAdjust), int(npassAdjust)])
         if len(group.strip()) == 0:
             group = "top-level"
@@ -98,7 +98,7 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
             oldest = datetime.datetime.fromtimestamp(int(oldest)).strftime('%Y-%m-%d %H:%M:%S')
             newest = datetime.datetime.fromtimestamp(int(newest)).strftime('%Y-%m-%d %H:%M:%S')
         
-        print "  ", "npass/ntest = %d/%d  %s  %s %s" % (npass, ntest, dataset, oldest, newest)
+        print "  ", "npass/ntest = %d/%d  %s  %s %s  %s" % (npass, ntest, dataset, oldest, newest, extras)
 
 
 #############################################################

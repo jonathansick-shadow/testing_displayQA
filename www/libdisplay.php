@@ -1304,6 +1304,10 @@ function writeTable_SummarizeAllGroups() {
         );
     
     ## go through all directories and look for .summary files
+    $extras = array();
+    $extraKeys = array();
+
+    $groupShowing = array();
     $rows = array();
     $iGroup = 1;
     foreach ($groups as $group=>$n) {
@@ -1351,6 +1355,18 @@ function writeTable_SummarizeAllGroups() {
                     $lastUpdate = $summ['entrytime'];
                 }
             }
+
+            # if there's extra data from the cache, build an array of key=>array(values)
+            if (array_key_exists('extras', $summ) and strlen($summ['extras']) > 0) {
+                $kvs = preg_split("/,/", $summ['extras']);
+                $extras[$group] = array();
+                foreach ($kvs as $kv) {
+                    list($k, $v) = preg_split("/:/", $kv);
+                    $extras[$group][$k] = $v;
+                    $extraKeys[$k] = 1;
+
+                }
+            }
                 
         }
 
@@ -1382,6 +1398,7 @@ function writeTable_SummarizeAllGroups() {
         $row = array($iGroup, $testLink, $timestampStr,
                      $nTestSets, "$nTestSetsPass / $nTestSetsFail", $nTest, $passLink, $failRate);
         $rows[] = $row;
+        $groupShowing[] = $group;
         $iGroup += 1;
 
 
@@ -1390,25 +1407,43 @@ function writeTable_SummarizeAllGroups() {
             if (preg_match("/$sg/", $group)) {
                 if (count($arr) == 0) {
                     $arr = array(0, 0, 0, 0, 0);
+                    foreach ($extraKeys as $ek) {
+                        $arr[] = 0.0;
+                    }
                 }
                 $arr[0] += $nTestSets;
                 $arr[1] += $nTestSetsPass;
                 $arr[2] += $nTest;
                 $arr[3] += $nPass;
                 $arr[4] += 1;
+                $i = 5;
+                foreach ($extraKeys as $k=>$v) {
+                    if (array_key_exists($group, $extras) and array_key_exists($k, $extras[$group])) {
+                        $val = $extras[$group][$k];
+                        $arr[$i] += $val;
+                        $i += 1;
+                    }
+                }
                 $specialGroups[$sg] = $arr;
-                #break;
+
             }
         }
     }
 
+    
     $sgRows = array();
     foreach ($specialGroups as $sg => $arr) {
         if (count($arr) == 0) {
             continue;
             #$arr = array(0, 0, 0, 0);
         }
-        list($nTestSets, $nTestSetsPass, $nTest, $nPass, $nMatch) = $arr;
+        $nTestSets = $arr[0];
+        $nTestSetsPass = $arr[1];
+        $nTest = $arr[2];
+        $nPass = $arr[3];
+        $nMatch = $arr[4];
+
+        
         $nTestSetsFail = $nTestSets - $nTestSetsPass;
         $nFail = $nTest - $nPass;
         $failRate = ($nTest > 0) ? sprintf("%.3f", 1.0*$nFail/$nTest) : "n/a";
@@ -1416,9 +1451,20 @@ function writeTable_SummarizeAllGroups() {
         
         $row = array("n=".$nMatch, $specialGroupLabels[$sg], "n/a",
                      $nTestSets, "$nTestSetsPass / $nTestSetsFail", $nTest, $passLink, $failRate);
+
+        $i = 5;
+        foreach ($extraKeys as $k) {
+            if (array_key_exists($i, $arr)) {
+                $value = $arr[$i];
+                $row[] = sprintf("%.2f", floatval($value)/$nMatch);
+            }
+            $i += 1;
+        }
+        
         $sgRows[] = $row;
     }
-    $sgRows[] = array("&nbsp;", "", "", "", "", "", "", "");
+    $spaceRow = array("&nbsp;", "", "", "", "", "", "", "");
+    
     
     $table = new Table("width=\"100%\"");
     #$tdAtt = array();
@@ -1428,12 +1474,31 @@ function writeTable_SummarizeAllGroups() {
                        "align=\"right\"", "align=\"right\"",
                        "align=\"right\"" );
 
+    foreach ($extraKeys as $k => $v) {
+        $head[] = $k;
+        $tdAttribs[] = "align=\"right\"";
+        $spaceRow[] = "";
+    }
+    $sgRows[] = $spaceRow;
     
     $table->addHeader($head, $tdAttribs);
     foreach ($sgRows as $row) {
+        #foreach ($extraKeys as $k=>$v) {
+        #    $row[] = "";
+        #}
         $table->addRow($row, $tdAttribs);
     }
-    foreach ($rows as $row) {
+    
+    for($i=0; $i < count($rows); $i++) {
+        $row = $rows[$i];
+        $group = $groupShowing[$i];
+        foreach ($extraKeys as $k=>$v) {
+            if (array_key_exists($group, $extras) and array_key_exists($k, $extras[$group])) {
+                $row[] = $extras[$group][$k];
+            } else {
+                $row[] = "";
+            }
+        }
         $table->addRow($row, $tdAttribs);
     }
     return $table->write();
