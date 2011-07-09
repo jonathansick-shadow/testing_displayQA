@@ -436,7 +436,14 @@ function getTimeStampsFromCache() {
     
     $tstamps = array();
     foreach ($results as $r) {
-        $tstamps[] = intval($r['entrytime']);
+        $ts = $r['entrytime'];
+        if (array_key_exists('newest', $r)) {
+            $ts = $r['newest'];
+        }
+        $ts = intval($ts);
+        if ($ts > 0) {
+            $tstamps[] = $ts;
+        }
     }
     if (count($tstamps) > 0) {
         $min = min($tstamps);
@@ -1004,10 +1011,13 @@ function summarizeTestsFromCache() {
     #$entrytime = 0;
     foreach ($results as $r) {
         $test = $r['test'];
-        $ret[$test] = array('name' => $r['test'],
-                            'entrytime' => $r['entrytime'],
-                            'npass' => $r['npass'],
-                            'ntest' => $r['ntest']);
+        $ret[$test] = $r;
+        #array('name' => $r['test'],
+        #                    'entrytime' => $r['entrytime'],
+        #                    'npass' => $r['npass'],
+        #                    'ntest' => $r['ntest'],
+        #                    'oldest' => $['oldest'],
+        #    );
     }
     return $ret;
 
@@ -1113,8 +1123,12 @@ function writeTable_SummarizeAllTests() {
             $failRate = 1.0 - 1.0*$summ['npass']/$summ['ntest'];
             $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
         }
-        if ($summ['entrytime'] > 0) {
-            $timestampStr = date("Y-m-d H:i:s", $summ['entrytime']);
+        $lastUpdate = $summ['entrytime'];
+        if (array_key_exists('newest', $summ)) {
+            $lastUpdate = $summ['newest'];
+        }
+        if ($lastUpdate  > 0) {
+            $timestampStr = date("Y-m-d H:i:s", $lastUpdate);
         } else {
             $timestampStr = "n/a";
         }
@@ -1147,7 +1161,7 @@ function loadCache() {
         $db = connect("."); #$testDir);
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         try {
-            $testCmd = "select entrytime,test,ntest,npass,dataset from counts;";
+            $testCmd = "select * from counts;";
             $prep = $db->prepare($testCmd);
             $prep->execute();
             $results = $prep->fetchAll();
@@ -1269,15 +1283,7 @@ function writeTable_SummarizeAllGroups() {
     #echo "have testdirs<br/>";
     
     ## go through all directories and look for .summary files
-    $table = new Table("width=\"100%\"");
-    #$tdAtt = array();
-    $head= array("No.", "Test", "mtime", "TestSets", "Pass/Fail", "Tests", "Pass/Fail", "Fail Rate");
-    $tdAttribs = array("align=\"left\"", "align=\"left\"", "align=\"left\"",
-                       "align=\"right\"", "align=\"right\"",
-                       "align=\"right\"", "align=\"right\"",
-                       "align=\"right\"" );
-    
-    $table->addHeader($head, $tdAttribs);
+    $rows = array();
     $iGroup = 1;
     foreach ($groups as $group=>$n) {
 
@@ -1315,9 +1321,16 @@ function writeTable_SummarizeAllGroups() {
             if ($summ['ntest'] == $summ['npass']) {
                 $nTestSetsPass += 1;
             }
-            if ($summ['entrytime'] > $lastUpdate) {
-                $lastUpdate = $summ['entrytime'];
+            if (array_key_exists('newest', $summ)) {
+                if ($summ['newest'] > $lastUpdate) {
+                    $lastUpdate = $summ['newest'];
+                }
+            } else {
+                if ($summ['entrytime'] > $lastUpdate) {
+                    $lastUpdate = $summ['entrytime'];
+                }
             }
+                
         }
 
         # don't bother posting a TestSet with no Tests (ie. an empty directory)
@@ -1347,8 +1360,23 @@ function writeTable_SummarizeAllGroups() {
         $nTestSetsFail = $nTestSets - $nTestSetsPass;
         $row = array($iGroup, $testLink, $timestampStr,
                      $nTestSets, "$nTestSetsPass / $nTestSetsFail", $nTest, $passLink, $failRate);
-        $table->addRow($row, $tdAttribs);
+        $rows[] = $row;
         $iGroup += 1;
+    }
+
+    
+    $table = new Table("width=\"100%\"");
+    #$tdAtt = array();
+    $head= array("No.", "Test", "mtime", "TestSets", "Pass/Fail", "Tests", "Pass/Fail", "Fail Rate");
+    $tdAttribs = array("align=\"left\"", "align=\"left\"", "align=\"left\"",
+                       "align=\"right\"", "align=\"right\"",
+                       "align=\"right\"", "align=\"right\"",
+                       "align=\"right\"" );
+
+    
+    $table->addHeader($head, $tdAttribs);
+    foreach ($rows as $row) {
+        $table->addRow($row, $tdAttribs);
     }
     return $table->write();
     

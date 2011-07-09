@@ -17,6 +17,7 @@ It's only purpose to create a count cache for older runs which preceded caching.
 
 import sys, os, re, glob
 import optparse
+import datetime
 
 haveEups = True
 try:
@@ -87,11 +88,17 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
     for i in range(len(testSetInfo)):
         group, alias, label = testSetInfo[i]
         ts = dispQa.TestSet(label=label, group=group, alias=alias, wwwCache=True)
-        ntest, npass, dataset = ts.updateCounts(increment=[int(ntestAdjust), int(npassAdjust)])
+        ntest, npass, dataset, oldest, newest = \
+               ts.updateCounts(increment=[int(ntestAdjust), int(npassAdjust)])
         if len(group.strip()) == 0:
             group = "top-level"
         print "%-12s %-24s " % (group, label)
-        print "  ", "npass/ntest = %d/%d  %s" % (npass, ntest, dataset)
+
+        if oldest > 0 and newest > 0:
+            oldest = datetime.datetime.fromtimestamp(int(oldest)).strftime('%Y-%m-%d %H:%M:%S')
+            newest = datetime.datetime.fromtimestamp(int(newest)).strftime('%Y-%m-%d %H:%M:%S')
+        
+        print "  ", "npass/ntest = %d/%d  %s  %s %s" % (npass, ntest, dataset, oldest, newest)
 
 
 #############################################################

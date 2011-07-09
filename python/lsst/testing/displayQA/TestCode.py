@@ -138,7 +138,8 @@ class TestSet(object):
         # create the cache table
         if self.wwwCache:
             self.countsTable = "counts"
-            self.countKeys = ["test text", "ntest integer", "npass integer", "dataset text"]
+            self.countKeys = ["test text", "ntest integer", "npass integer", "dataset text",
+                              "oldest timestamp", "newest timestamp"]
             keys = self.stdKeys + self.countKeys
             cmd = "create table if not exists " + self.countsTable + " ("+",".join(keys)+")"
             curs = self.cacheConnect()
@@ -231,18 +232,26 @@ class TestSet(object):
 
 
     def _readCounts(self):
-        sql = "select value,lowerlimit,upperlimit from summary"
+        sql = "select entrytime, value,lowerlimit,upperlimit from summary"
         self.curs.execute(sql)
         results = self.curs.fetchall()
 
         # count the passed tests
         npass = 0
         ntest = 0
+        oldest = 1e12
+        newest = 0
         for r in results:
             ntest += 1
-            cmp = self._verifyTest(*r)
+            entrytime = r[0]
+            vlu = r[1:]
+            cmp = self._verifyTest(*vlu)
             if cmp == 0:
                 npass += 1
+            if entrytime < oldest:
+                oldest = entrytime
+            if entrytime > newest:
+                newest = entrytime
 
         # get the dataset from the metadata
         sql = "select key,value from metadata"
@@ -254,10 +263,10 @@ class TestSet(object):
             if k == 'dataset':
                 dataset = v
         
-        return ntest, npass, dataset
+        return ntest, npass, dataset, oldest, newest
 
 
-    def _writeCounts(self, ntest, npass, dataset="unknown"):
+    def _writeCounts(self, ntest, npass, dataset="unknown", oldest=None, newest=None):
         """Cache summary info for this TestSet
 
 	@param *args A dict of key,value pairs, or a key and value
@@ -265,7 +274,7 @@ class TestSet(object):
 
         curs = self.cacheConnect()
         keys = [x.split()[0] for x in self.countKeys]
-        replacements = dict( zip(keys, [self.testDir, ntest, npass, dataset]))
+        replacements = dict( zip(keys, [self.testDir, ntest, npass, dataset, oldest, newest]))
         self._insertOrUpdate(self.countsTable, replacements, ['test'], cache=True)
         self.cacheClose()
         
@@ -319,16 +328,16 @@ class TestSet(object):
     def updateCounts(self, dataset=None, increment=[0,0]):
         ntest, npass = increment
 
-        ntestOrig, npassOrig, datasetOrig = self._readCounts()
+        ntestOrig, npassOrig, datasetOrig, oldest, newest = self._readCounts()
         ntest = int(ntestOrig) + ntest
         npass = int(npassOrig) + npass
         if dataset is None:
             dataset = datasetOrig
         if self.wwwCache:
-            self._writeCounts(ntest, npass, dataset)
+            self._writeCounts(ntest, npass, dataset, oldest, newest)
 
         # return the new settings
-        return ntest, npass, dataset
+        return ntest, npass, dataset, oldest, newest
         
     def addTest(self, *args, **kwargs):
         """Add a test to this testing suite.
