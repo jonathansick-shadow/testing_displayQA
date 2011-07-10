@@ -1283,6 +1283,7 @@ function writeTable_SummarizeAllGroups() {
     #echo "have testdirs<br/>";
 
     $specialGroups = array(
+        ".*" => array(),
         ".*1-.$" => array(),
         ".*0-.$" => array(),
         ".*-u$" => array(),
@@ -1293,6 +1294,7 @@ function writeTable_SummarizeAllGroups() {
         ".*-y$" => array()
         );
     $specialGroupLabels = array(
+        ".*" => "all data",
         ".*1-.$" => "cloud",
         ".*0-.$" => "cloudless",
         ".*-u$" => "all u",

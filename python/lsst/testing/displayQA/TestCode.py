@@ -346,6 +346,7 @@ class TestSet(object):
         ntest, npass = increment
 
         ntestOrig, npassOrig, datasetOrig, oldest, newest, extras = self._readCounts()
+
         ntest = int(ntestOrig) + ntest
         npass = int(npassOrig) + npass
         if dataset is None:
@@ -373,7 +374,6 @@ class TestSet(object):
         #cache the results
         passed = test.evaluate()
         npassed = 1 if passed else 0
-        self.updateCounts(increment=[1, npassed])
         
         # grab a traceback for failed tests
         backtrace = ""
@@ -395,6 +395,7 @@ class TestSet(object):
                                         backtrace]) )
         self._insertOrUpdate(self.summTable, replacements, ['label'])
 
+        self.updateCounts() #increment=[1, npassed])
 
 
 
