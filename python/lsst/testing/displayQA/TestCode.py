@@ -236,9 +236,13 @@ class TestSet(object):
         self.curs.execute(sql)
         results = self.curs.fetchall()
 
-        # key: [regex, displaylabel, value]
+        # key: [regex, displaylabel, units, values]
         extras = {
-            'fwhm': [".*fwhm.*", "&lt;fwhm&gt;", []]
+            'fwhm' : [".*fwhm.*",                    "fwhm",            "[&Prime;] (FWHM)",           []],
+            'r50'  : [".*median astrometry error.*", "r<sub>50</sub>",  "[&Prime;] (Ast.error)", []],
+            'std'  : [".*stdev psf_vs_cat.*",        "&sigma;<sub>phot</sub>", "[mag] (psf-cat)",  []],
+            'comp' : [".*photometric depth.*",       "&omega;<sub>50</sub>", "[mag] (Completeness)", []],
+            #'zero' : [".*median zeropoint.*",        "ZP",               "[mag] (Zeropoint)",        []],
             }
         
         # count the passed tests
@@ -260,15 +264,17 @@ class TestSet(object):
                 newest = entrytime
 
             for k, v in extras.items():
-                reg, displabel, value = v
+                reg, displabel, value, units = v
                 if re.search(reg, label):
-                    extras[k][2].append(vlu[0])
+                    extras[k][3].append(vlu[0])
 
         # encode any extras
         extraStr = ""
-        if len(extras['fwhm'][2]) > 0:
-            fwhmMean = "%s:%.2f" % (extras['fwhm'][1], numpy.mean(extras['fwhm'][2]))
-            extraStr = fwhmMean
+        extraValues = []
+        for k,v in extras.items():
+            if len(v[3]) > 0:
+                extraValues.append("%s:%.2f:%.2f:%s" % (v[1], numpy.mean(v[3]), numpy.std(v[3]), v[2]))
+        extraStr = ",".join(extraValues)
         
         # get the dataset from the metadata
         sql = "select key,value from metadata"

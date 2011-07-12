@@ -81,6 +81,20 @@ function getDefaultH1() {
 }
 
 
+function stdev($aValues, $bSample = false) {
+    if (count($aValues) < 2) {
+        return 0.0;
+    }
+    $fMean = array_sum($aValues) / count($aValues);
+    $fVariance = 0.0;
+    foreach ($aValues as $i) {
+        $fVariance += pow($i - $fMean, 2);
+    }
+    $fVariance /= ( $bSample ? count($aValues) - 1 : count($aValues) );
+    return (float) sqrt($fVariance);
+}
+
+
 
 function getTestLinksThisGroup($page) {
     
@@ -1305,9 +1319,39 @@ function writeTable_SummarizeAllGroups() {
         ".*-y$" => "all y"
         );
     
-    ## go through all directories and look for .summary files
-    $extras = array();
+    ## go through all directories
+    # get the extraKeys
     $extraKeys = array();
+     
+    foreach ($groups as $group=>$n) {
+        if (!array_key_exists($group, $dirs)) {
+            continue;
+        }
+        foreach ($dirs[$group] as $testDir) {
+            # must deal with default group "" specially
+            $parts = preg_split("/_/", $testDir);
+            if (strlen($parts[1]) > 0 and $group == "") { continue;}
+
+            if ($summs == -1 or !array_key_exists($testDir, $summs)) {
+                $summ = summarizeTestByCounting($testDir);
+            } else {
+                $summ = $summs[$testDir];
+            }
+            
+            # if there's extra data from the cache, build an array of key=>array(values)
+            if (array_key_exists('extras', $summ) and strlen($summ['extras']) > 0) {
+                $kves = preg_split("/,/", $summ['extras']);
+                $extras[$group] = array();
+                foreach ($kves as $kve) {
+                    list($k, $v, $e, $u) = preg_split("/:/", $kve);
+                    $extraKeys[$k] = 1;
+                }
+            }
+        }
+    }
+    $extraKeys = array_keys($extraKeys);
+    
+    $extras = array();
 
     $groupShowing = array();
     $rows = array();
@@ -1360,13 +1404,13 @@ function writeTable_SummarizeAllGroups() {
 
             # if there's extra data from the cache, build an array of key=>array(values)
             if (array_key_exists('extras', $summ) and strlen($summ['extras']) > 0) {
-                $kvs = preg_split("/,/", $summ['extras']);
-                $extras[$group] = array();
-                foreach ($kvs as $kv) {
-                    list($k, $v) = preg_split("/:/", $kv);
-                    $extras[$group][$k] = $v;
-                    $extraKeys[$k] = 1;
-
+                $kves = preg_split("/,/", $summ['extras']);
+                if (!array_key_exists($group, $extras)) {
+                    $extras[$group] = array();
+                }
+                foreach ($kves as $kve) {
+                    list($k, $v, $e, $u) = preg_split("/:/", $kve);
+                    $extras[$group][$k] = array(floatval($v), floatval($e), $u);
                 }
             }
                 
@@ -1409,9 +1453,9 @@ function writeTable_SummarizeAllGroups() {
             if (preg_match("/$sg/", $group)) {
                 if (count($arr) == 0) {
                     $arr = array(0, 0, 0, 0, 0);
-                    foreach ($extraKeys as $ek) {
-                        $arr[] = 0.0;
-                    }
+                    #foreach ($extraKeys as $ek) {
+                    #    $arr[] = array();
+                    #}
                 }
                 $arr[0] += $nTestSets;
                 $arr[1] += $nTestSetsPass;
@@ -1419,10 +1463,14 @@ function writeTable_SummarizeAllGroups() {
                 $arr[3] += $nPass;
                 $arr[4] += 1;
                 $i = 5;
-                foreach ($extraKeys as $k=>$v) {
+                foreach ($extraKeys as $k) {
+
                     if (array_key_exists($group, $extras) and array_key_exists($k, $extras[$group])) {
-                        $val = $extras[$group][$k];
-                        $arr[$i] += $val;
+                        list($val,$err,$unit) = $extras[$group][$k];
+                        if (!array_key_exists($i, $arr)) {
+                            $arr[$i] = array();
+                        }
+                        $arr[$i][]  = $val;
                         $i += 1;
                     }
                 }
@@ -1457,8 +1505,11 @@ function writeTable_SummarizeAllGroups() {
         $i = 5;
         foreach ($extraKeys as $k) {
             if (array_key_exists($i, $arr)) {
-                $value = $arr[$i];
-                $row[] = sprintf("%.2f", floatval($value)/$nMatch);
+                $values = $arr[$i];
+                $entry = sprintf("<div title=\"&plusmn;%.2f\">%.2f</div>", stdev($values), array_sum($values)/$nMatch);
+                $row[] = $entry;
+            } else {
+                $row[] = "";
             }
             $i += 1;
         }
@@ -1470,15 +1521,17 @@ function writeTable_SummarizeAllGroups() {
     
     $table = new Table("width=\"100%\"");
     #$tdAtt = array();
-    $head= array("No.", "Test", "mtime", "TestSets", "Pass/Fail", "Tests", "Pass/Fail", "Fail Rate");
+    $pSymb = "Pass"; #"<font color=\"#009900\">&#x2713;</font>";
+    $fSymb = "Fail"; #"<font color=\"#990000\">X</font>";
+    $head= array("No.", "Test", "mtime", "TestSets", "$pSymb/$fSymb", "Tests", "$pSymb/$fSymb", "Fail Rate");
     $tdAttribs = array("align=\"left\"", "align=\"left\"", "align=\"left\"",
                        "align=\"right\"", "align=\"right\"",
                        "align=\"right\"", "align=\"right\"",
                        "align=\"right\"" );
 
-    foreach ($extraKeys as $k => $v) {
+    foreach ($extraKeys as $k) {
         $head[] = $k;
-        $tdAttribs[] = "align=\"right\"";
+        $tdAttribs[] = "align=\"right\" width=\"40\"";
         $spaceRow[] = "";
     }
     $sgRows[] = $spaceRow;
@@ -1494,9 +1547,10 @@ function writeTable_SummarizeAllGroups() {
     for($i=0; $i < count($rows); $i++) {
         $row = $rows[$i];
         $group = $groupShowing[$i];
-        foreach ($extraKeys as $k=>$v) {
+        foreach ($extraKeys as $k) {
             if (array_key_exists($group, $extras) and array_key_exists($k, $extras[$group])) {
-                $row[] = $extras[$group][$k];
+                list($v, $e, $u) = $extras[$group][$k];
+                $row[] = sprintf("<div title=\"&plusmn;%.2f %s\">%.2f</div>", $e, $u, $v);
             } else {
                 $row[] = "";
             }
