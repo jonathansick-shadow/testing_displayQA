@@ -195,8 +195,8 @@ class TestSet(object):
             for k,v in dataDict.items():
                 shelf[k] = v
             shelf.close()
-
-    def unshelve(self, label, default=None):
+            
+    def unshelve(self, label, default={}):
         data = default
         if self.useCache:
             filename = os.path.join(self.wwwDir, label+".shelve")
@@ -242,6 +242,8 @@ class TestSet(object):
             'r50'  : [".*median astrometry error.*", "r<sub>50</sub>",  "[&Prime;] (Ast.error)", []],
             'std'  : [".*stdev psf_vs_cat.*",        "&sigma;<sub>phot</sub>", "[mag] (psf-cat)",  []],
             'comp' : [".*photometric depth.*",       "&omega;<sub>50</sub>", "[mag] (Completeness)", []],
+            "nccd" : [".*nCcd.*",                    "n<sub>CCD</sub>",      "(num. CCDs proc.)",     []],
+            "nstar": [".*nDet.*",                    "n<sub>*</sub>",        "(num. Detections)",  []],
             #'zero' : [".*median zeropoint.*",        "ZP",               "[mag] (Zeropoint)",        []],
             }
         

@@ -1350,6 +1350,7 @@ function writeTable_SummarizeAllGroups() {
         }
     }
     $extraKeys = array_keys($extraKeys);
+    sort($extraKeys);
     
     $extras = array();
 
@@ -1435,7 +1436,7 @@ function writeTable_SummarizeAllGroups() {
             $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
         }
         if ($lastUpdate > 0) {
-            $timestampStr = date("Y-m-d H:i:s", $lastUpdate);
+            $timestampStr = date("Y-m-d H:i", $lastUpdate);
         } else {
             $timestampStr = "n/a";
         }
@@ -1497,6 +1498,8 @@ function writeTable_SummarizeAllGroups() {
         $nTestSetsFail = $nTestSets - $nTestSetsPass;
         $nFail = $nTest - $nPass;
         $failRate = ($nTest > 0) ? sprintf("%.3f", 1.0*$nFail/$nTest) : "n/a";
+        $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
+
         $passLink = tfColor("$nPass / $nFail", ($nPass==$nTest));
         
         $row = array("n=".$nMatch, $specialGroupLabels[$sg], "n/a",
@@ -1506,7 +1509,12 @@ function writeTable_SummarizeAllGroups() {
         foreach ($extraKeys as $k) {
             if (array_key_exists($i, $arr)) {
                 $values = $arr[$i];
-                $entry = sprintf("<div title=\"&plusmn;%.2f\">%.2f</div>", stdev($values), array_sum($values)/$nMatch);
+                if (preg_match("/^n/", $k)) {
+                    $entry = sprintf("<div title=\"&plusmn;%d\">%d</div>", stdev($values), array_sum($values)/$nMatch);
+                } else {
+                    $entry = sprintf("<div title=\"&plusmn;%.2f\">%.2f</div>", stdev($values), array_sum($values)/$nMatch);
+                }                    
+                    
                 $row[] = $entry;
             } else {
                 $row[] = "";
@@ -1518,12 +1526,13 @@ function writeTable_SummarizeAllGroups() {
     }
     $spaceRow = array("&nbsp;", "", "", "", "", "", "", "");
     
+
     
     $table = new Table("width=\"100%\"");
     #$tdAtt = array();
     $pSymb = "Pass"; #"<font color=\"#009900\">&#x2713;</font>";
     $fSymb = "Fail"; #"<font color=\"#990000\">X</font>";
-    $head= array("No.", "Test", "mtime", "TestSets", "$pSymb/$fSymb", "Tests", "$pSymb/$fSymb", "Fail Rate");
+    $head= array("No.", "Test", "mtime", "Sets", "$pSymb/$fSymb", "Tests", "$pSymb/$fSymb", "Fail Rate");
     $tdAttribs = array("align=\"left\"", "align=\"left\"", "align=\"left\"",
                        "align=\"right\"", "align=\"right\"",
                        "align=\"right\"", "align=\"right\"",
@@ -1550,7 +1559,11 @@ function writeTable_SummarizeAllGroups() {
         foreach ($extraKeys as $k) {
             if (array_key_exists($group, $extras) and array_key_exists($k, $extras[$group])) {
                 list($v, $e, $u) = $extras[$group][$k];
-                $row[] = sprintf("<div title=\"&plusmn;%.2f %s\">%.2f</div>", $e, $u, $v);
+                if (preg_match("/^n/", $k)) {
+                    $row[] = sprintf("<div title=\"&plusmn;%d %s\">%d</div>", $e, $u, $v);
+                } else {
+                    $row[] = sprintf("<div title=\"&plusmn;%.2f %s\">%.2f</div>", $e, $u, $v);
+                }
             } else {
                 $row[] = "";
             }
