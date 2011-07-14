@@ -58,8 +58,21 @@ class Test(object):
         """Verify that our value is within our limits."""
         
         # grab a traceback for failed tests
-        if (self.value < self.limits[0] or self.value > self.limits[1]):
-            return False
+        if (not self.limits[0] is None) and (not self.limits[1] is None):
+            if (self.value < self.limits[0] or self.value > self.limits[1]):
+                return False
+            else:
+                return True
+        elif (self.limits[0] is None):
+            if self.value > self.limits[1]:
+                return False
+            else:
+                return True
+        elif (self.limits[1] is None):
+            if self.value < self.limits[0]:
+                return False
+            else:
+                return True
         else:
             return True
 
@@ -196,8 +209,8 @@ class TestSet(object):
                 shelf[k] = v
             shelf.close()
             
-    def unshelve(self, label, default={}):
-        data = default
+    def unshelve(self, label):
+        data = {}
         if self.useCache:
             filename = os.path.join(self.wwwDir, label+".shelve")
             if os.path.exists(filename):
@@ -266,7 +279,7 @@ class TestSet(object):
                 newest = entrytime
 
             for k, v in extras.items():
-                reg, displabel, value, units = v
+                reg, displabel, units, values = v
                 if re.search(reg, label):
                     extras[k][3].append(vlu[0])
 
