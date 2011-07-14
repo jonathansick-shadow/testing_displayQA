@@ -1296,27 +1296,46 @@ function writeTable_SummarizeAllGroups() {
     $dirs = getAllTestDirsByGroup();
     #echo "have testdirs<br/>";
 
+    #".*-u$" => array(),
+    #".*-g$" => array(),
+    #".*-r$" => array(),
+    #".*-i$" => array(),
+    #".*-z$" => array(),
+    #".*-y$" => array()
+    
     $specialGroups = array(
         ".*" => array(),
-        ".*1-.$" => array(),
         ".*0-.$" => array(),
-        ".*-u$" => array(),
-        ".*-g$" => array(),
-        ".*-r$" => array(),
-        ".*-i$" => array(),
-        ".*-z$" => array(),
-        ".*-y$" => array()
+        ".*1-.$" => array(),
+        ".*0-u$" => array(),
+        ".*0-g$" => array(),
+        ".*0-r$" => array(),
+        ".*0-i$" => array(),
+        ".*0-z$" => array(),
+        ".*0-y$" => array(),
+        ".*1-u$" => array(),
+        ".*1-g$" => array(),
+        ".*1-r$" => array(),
+        ".*1-i$" => array(),
+        ".*1-z$" => array(),
+        ".*1-y$" => array()
         );
     $specialGroupLabels = array(
         ".*" => "all data",
-        ".*1-.$" => "cloud",
-        ".*0-.$" => "cloudless",
-        ".*-u$" => "all u",
-        ".*-g$" => "all g",
-        ".*-r$" => "all r",
-        ".*-i$" => "all i",
-        ".*-z$" => "all z",
-        ".*-y$" => "all y"
+        ".*0-.$" => "all cloudless",
+        ".*1-.$" => "all cloud",
+        ".*0-u$" => "u cloudless",
+        ".*0-g$" => "g cloudless",
+        ".*0-r$" => "r cloudless",
+        ".*0-i$" => "i cloudless",
+        ".*0-z$" => "z cloudless",
+        ".*0-y$" => "y cloudless",
+        ".*1-u$" => "u cloud",
+        ".*1-g$" => "g cloud",
+        ".*1-r$" => "r cloud",
+        ".*1-i$" => "i cloud",
+        ".*1-z$" => "z cloud",
+        ".*1-y$" => "y cloud"
         );
     
     ## go through all directories
