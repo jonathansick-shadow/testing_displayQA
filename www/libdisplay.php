@@ -1305,8 +1305,8 @@ function writeTable_SummarizeAllGroups() {
     
     $specialGroups = array(
         ".*" => array(),
-        ".*0-.$" => array(),
         ".*1-.$" => array(),
+        ".*0-.$" => array(),
         ".*0-u$" => array(),
         ".*0-g$" => array(),
         ".*0-r$" => array(),
@@ -1322,20 +1322,20 @@ function writeTable_SummarizeAllGroups() {
         );
     $specialGroupLabels = array(
         ".*" => "all data",
-        ".*0-.$" => "all cloudless",
-        ".*1-.$" => "all cloud",
-        ".*0-u$" => "u cloudless",
-        ".*0-g$" => "g cloudless",
-        ".*0-r$" => "r cloudless",
-        ".*0-i$" => "i cloudless",
-        ".*0-z$" => "z cloudless",
-        ".*0-y$" => "y cloudless",
-        ".*1-u$" => "u cloud",
-        ".*1-g$" => "g cloud",
-        ".*1-r$" => "r cloud",
-        ".*1-i$" => "i cloud",
-        ".*1-z$" => "z cloud",
-        ".*1-y$" => "y cloud"
+        ".*1-.$" => "all cloudless",
+        ".*0-.$" => "all cloud",
+        ".*0-u$" => "u cloud",
+        ".*0-g$" => "g cloud",
+        ".*0-r$" => "r cloud",
+        ".*0-i$" => "i cloud",
+        ".*0-z$" => "z cloud",
+        ".*0-y$" => "y cloud",
+        ".*1-u$" => "u cloudless",
+        ".*1-g$" => "g cloudless",
+        ".*1-r$" => "r cloudless",
+        ".*1-i$" => "i cloudless",
+        ".*1-z$" => "z cloudless",
+        ".*1-y$" => "y cloudless"
         );
     
     ## go through all directories
