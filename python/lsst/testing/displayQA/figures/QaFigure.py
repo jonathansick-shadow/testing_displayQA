@@ -3,6 +3,9 @@ import os, sys, re, glob
 import numpy
 import numpy.ma as numpyMa
 
+import matplotlib
+#matplotlib.use('TkAgg')
+
 import matplotlib.figure as figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigCanvas
 from matplotlib.font_manager import FontProperties
@@ -83,15 +86,13 @@ class QaFigure(object):
     def getTransformedMap(self):
         """Take plot coordinates for map areas and convert to figure coordinates."""
 
+        xpmax, ypmax = self.fig.transFigure.transform((1.0, 1.0))
+        
         mapAreasNew = []
         for ma in self.mapAreas:
             label, x0, y0, x1, y1, info, axes = ma
-            tr = self.fig.transFigure.transform((1.0, 1.0))
-            xpmax, ypmax = tr
-            xy1 = axes.transData.transform((x0, y0))
-            xy2 = axes.transData.transform((x1, y1))
-            left, bottom = xy1
-            right, top = xy2
+            left, bottom = axes.transData.transform((x0, y0))
+            right, top = axes.transData.transform((x1, y1))
             mapAreasNew.append([label, left, ypmax-top, right, ypmax-bottom, info])
             
         return mapAreasNew
