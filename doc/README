@@ -15,10 +15,14 @@
 The following steps are necessary to run pipeQA:
 
 - setup pipeQA
-- put displayQA in some web visible place (/var/www/html, ~/public_html/)
-- setup displayQA   [officially optional, but it provides the web display]
-- export TESTBED_PATH to point to the parent directory
-  of the data directory.
+- setup displayQA
+- export WWW_ROOT=/path/to/your/web/directory (presumably in ~/public_html/ or similar location)
+- export WWW_RERUN=site_name
+- create a displayQA rerun site:
+  $ newQa.py site_name
+- If working from disk data (not request for database use):
+  - export TESTBED_PATH to point to the parent directory
+    of the data directory.
 - run the pipeQa.py script
 - look at your data with a browser at eg. www.foo.edu/~myuid/displayQA/
 
@@ -36,28 +40,122 @@ pipeQa.py [options] dataset
 
 Options:
   -h, --help            show this help message and exit
-  -v VISIT, --visit=VISIT
-                        Specify visit as regex. Use neg. number for last 'n'
-                        visits. (default=-1)
+  -b BREAKBY, --breakBy=BREAKBY
+                        Break the run by 'visit','raft', or 'ccd'
+                        (default=visit)
+  -C CAMERA, --camera=CAMERA
+                        Specify a camera and override auto-detection
+                        (default=none)
   -c CCD, --ccd=CCD     Specify ccd as regex (default=.*)
+  -d, --delaySummary    Delay making summary figures until all ccds are
+                        finished (default=False)
+  -e, --exceptExit      Don't capture exceptions, fail and exit
+                        (default=False)
+  -f, --forkFigure      Make figures in separate process (default=False)
+  -g GROUP, --group=GROUP
+                        Specify sub-group of visits to run
+                        'groupSize:whichGroup' (default=none)
+  -k, --keep            Keep existing outputs (default=False)
   -r RAFT, --raft=RAFT  Specify raft as regex (default=.*)
-  -s SNAP, --snap=SNAP  Specify snap as regex (default=.*)
   -R RERUN, --rerun=RERUN
                         Rerun to analyse - only valid for hsc/suprimecam
                         (default=none)
+  -s SNAP, --snap=SNAP  Specify snap as regex (default=.*)
   -t TEST, --test=TEST  Regex specifying which QaAnalysis to run (default=.*)
+  -V VERBOSITY, --verbosity=VERBOSITY
+                        Trace level for lsst.testing.pipeQA
+  -v VISIT, --visit=VISIT
+                        Specify visit as regex OR color separated list.
+                        (default=.*)
+  --noWwwCache          Disable caching of pass/fail (needed to run in
+                        parallel) (default=False)
 -----------------------------------------------------------------
 
+**** EXAMPLES **** (detailed explanatino of options follows)
 
-Thus, to run all visits of an LSST Tuesday test run from the database:
+Eg (1) To run all visits of an LSST Tuesday test run from the database:
 
-./bin/pipeQa.py -v ".*" buildbot_PT1_2_u_wp_trunk_2011_0513_200506
+$ ./bin/pipeQa.py -v ".*" buildbot_Yadda_Yadda
+
+Eg (2) For a big dataset (which might blow the memory):
+
+$ ./bin/pipeQa.py -f -b raft -k -d -v ".*" buildbot_Yadda_Yadda
+
+Eg (3) To run on multiple cores:
+
+$ ./bin/pipeQa.py --noWwwCache -g 5:0 -f -b raft -k -d -v ".*" buildbot_Yadda_Yadda > qa0 &
+$ ./bin/pipeQa.py --noWwwCache -g 5:1 -f -b raft -k -d -v ".*" buildbot_Yadda_Yadda > qa1 &
+
+# Wait for completetion of the two jobs and ...
+$ cacheTestSummaries.py $WWW_RERUN
 
 
-To run from disk:
+The above example groups the visits (sorted) in groups of 5; the first
+command runs the first group (of 5 visits), and the second command
+runs the second group.  So, in total the first 10 visits will be
+processed.
+
+Eg (4) To run from disk:
 
 export TESTBED_PATH=/lsst3/weekly/datarel-runs/latest
-./bin/pipeQa.py -v ".*" update
+$ ./bin/pipeQa.py -v ".*" update
+
+
+
+
+--> Allowing continuation with '-k' (keep)
+
+If you wish to run a single CCD or raft, and the continue with others
+in additional pipeQa.py runs, you should use '-k'.  Any figures which
+summarize all data available will need to know the values from
+previous runs, and '-k' will cause these values to be cached.  It will
+also cause pipeQA to load previously run values from the cache.  If a
+new pipeQa run handles the same data as a previous one, the new
+results will be used and will overwrite the cached values.
+
+--> Reducing the Memory footprint with '-b' (breakBy), '-d', and '-f'
+
+In normal options (either example above), all the data for a visit
+will be loaded before testing/plotting.  For a large dataset, this can
+exceed the memory available.  The '-b chunk' (where chunk=raft|ccd)
+option will break up a visit and process it by raft or ccd as
+specified.  Because each raft/ccd will be run separately, you must
+also use the '-k' option to cache results.  If you forget, pipeQA will
+print a warning and set it on your behalf.
+
+When using '-b', you may also want to use '-d' to delay production of
+summary figures until all processing is complete.  Otherwise, summary
+figures will be regenerated after each raft/ccd is processed.  This
+may be desireable in some cases, but most often you'll want '-d' whenever
+'-b' is used.
+
+When many instances of pipeQA will be run on a single machine, '-f'
+can be used to fork the plotting.  pipeQA's memory footprint peaks
+when summary figures are being produced, and OS is unlikely to recover
+the allocated memory.  But forking the plot, the memory is consumed by
+a child process which terminates and returns it to the system upon
+completion of the figure.
+
+--> Parallel running ... avoiding cache conflicts with --noWwwCache
+
+The summaries of passed/failed tests are written in a sqlite database
+to avoid the need to reread them from all visits every time the home
+page is loaded.  Different sensors for a visit can't be run
+simultaneously as they'd need to access the same sqlite db.  The
+solution is --noWwwCache.  The side effect is that the page will load
+very slowly, particularly if many visits have been processed.  Once
+the pipeQa run is finished, the sqlite cache can be generated as a
+post-process with "cacheTestSummaries.py rerun".
+
+--> Grouping visits with '-g groupSize:groupNum'
+
+When multiple visits are to be processed (eg. with -v ".*"), you can
+group them and run one of the groups.  This was introduced to allow
+multiple instances to run on different cores.  Visits are sorted, and
+grouped in sets of size 'groupSize'.  'groupNum' specifies which group
+to run.  So, '-g 5:0' will group the visits by 5, and run the first
+group (visits 0,1,2,3,4) ... '-g 10:2' will group by 10 and run the
+third group (visits 20,21,...29).
 
 
 
