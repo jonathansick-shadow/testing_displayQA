@@ -332,6 +332,7 @@ class TestSet(object):
         where = " where " + " and ".join(where)
         
         cmd = "delete from " + table + " " + where
+
         if not cache:
             self.curs.execute(cmd)
         else:
@@ -453,7 +454,7 @@ class TestSet(object):
             self._insertOrUpdate(self.summTable, replacements, ['label'])
 
         
-    def addFigure(self, fig, filename, caption, areaLabel=None, navMap=False):
+    def addFigure(self, fig, basename, caption, areaLabel=None, toggle=None, navMap=False):
         """Add a figure to this test suite.
         
         @param fig      a matplotlib figure
@@ -463,11 +464,16 @@ class TestSet(object):
 	@param navMap    Identify this figure as a navigation map figure containing linked map areas.
         """
 
-        path = os.path.join(self.wwwDir, filename)
 
         # sub in the areaLabel, if given
+        filename = basename
+        if not toggle is None:
+            filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
         if not areaLabel is None:
-            path = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", path)
+            filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
+
+        path = os.path.join(self.wwwDir, filename)
+
         fig.savefig(path)
 
         if hasattr(fig, "mapAreas") and len(fig.mapAreas) > 0:

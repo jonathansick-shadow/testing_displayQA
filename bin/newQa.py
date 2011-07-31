@@ -12,7 +12,7 @@
 %prog [options] name
 """
 
-import sys, os, re, glob
+import sys, os, re, glob, shutil
 import optparse
 
 haveEups = True
@@ -28,7 +28,7 @@ except:
 #
 #############################################################
 
-def main(qaName, wwwRoot=None, force=False):
+def main(qaName, wwwRoot=None, force=False, forceClean=False):
 
     # verify that we have WWW_ROOT and TESTING_DISPLAYQA_DIR
     envVars = ['TESTING_DISPLAYQA_DIR']
@@ -101,7 +101,8 @@ def main(qaName, wwwRoot=None, force=False):
     files += glob.glob(os.path.join(doc, "README"))
 
     for f in files:
-        print "installing: ", f
+        dir, script = os.path.split(f)
+        print "installing: ", script
         cmd = "cp -r %s %s" % (f, dest)
         os.system(cmd)
 
@@ -110,6 +111,17 @@ def main(qaName, wwwRoot=None, force=False):
     print "   ",dest
 
 
+    if forceClean:
+        print ""
+        print "Cleaning existing data from", dest, ":"
+        dbFile = os.path.join(dest, "db.sqlite3")
+        if os.path.exists(dbFile):
+            print "   ", os.path.split(dbFile)[1]
+            os.remove(dbFile)
+        for testDir in glob.glob(os.path.join(dest, "test_*")):
+            print "   ", os.path.split(testDir)[1]
+            shutil.rmtree(testDir)
+
 #############################################################
 # end
 #############################################################
@@ -117,8 +129,12 @@ def main(qaName, wwwRoot=None, force=False):
 if __name__ == '__main__':
     parser = optparse.OptionParser(usage=__doc__)
     parser.add_option("-f", '--force', default=False, action="store_true",
-                      help="Force install if versions differ (default=%default)")
+                      help="Force a reinstall if already exists (default=%default)")
+    parser.add_option("-F", '--forceClean', default=False, action="store_true",
+                      help="Force a reinstall and remove existing data (default=%default)")
     parser.add_option('-r', '--root', default=None, help="Override WWW_ROOT (default=%default")
+    parser.add_option("-n", '--noquery', default=False, action="store_true",
+                      help="Don't query about options ... user knows what user is doing. (default=%default)")
     opts, args = parser.parse_args()
 
     if len(args) != 1:
@@ -126,6 +142,17 @@ if __name__ == '__main__':
         sys.exit(1)
 
     qaName, = args
-    
-    main(qaName, opts.root, opts.force)
+
+    if opts.forceClean and not opts.noquery:
+        query = raw_input("--forceClean is set, and will to delete any/all existing data in rerun %s."\
+                          " Continue [y/N]: " % (qaName))
+        if not re.search("^[yY]", query):
+            print "Exiting. (You may wish to consider --force instead of --forceClean)"
+            sys.exit(1)
+        
+
+    if opts.forceClean:
+        opts.force = True
+        
+    main(qaName, opts.root, opts.force, opts.forceClean)
     

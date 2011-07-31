@@ -265,6 +265,64 @@ function getShowHide() {
     return $show;
 }
 
+
+function getToggleNames() {
+
+    static $toggleNames = array();
+
+    if (count($toggleNames) > 0) { return $toggleNames; }
+    
+    $testDir = getDefaultTest();
+
+    if (strlen($testDir) < 1) {
+	return "";
+    }
+    $active = getActive();
+
+    $d = @dir("$testDir");
+    $toggles = array();
+    while( false !== ($f = $d->read())) {
+        if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
+        if (! preg_match("/$active/", $f)) { continue; }
+        $tog = preg_replace("/^.*\.([^-.]+)[\.-].*$/", "$1", $f);
+        if ($tog != $f) {
+            $toggles[$tog] = 1;
+        }
+    }
+    $toggleNames = array_keys($toggles);
+    sort($toggleNames);
+    
+    return $toggleNames;
+}
+
+function getToggle() {
+    $toggleNames = getToggleNames();
+    $n = count($toggleNames);
+
+    if ($n == 0) {
+        return ".*";
+    }
+
+    $toggle = 0;
+    if (array_key_exists('toggle', $_GET)) {
+        $toggle = $_GET['toggle'];
+        setcookie('displayQA_toggle', $toggle);
+    } elseif (array_key_exists('displayQA_toggle', $_COOKIE)) {
+        $toggle = $_COOKIE['displayQA_toggle'];
+    }
+    if (!preg_match("/^\d+$/", $toggle)) {
+        $toggle = 0;
+    }
+    if ($toggle > $n-1) {
+        $toggle = 0;
+    }
+
+    $toggleName = $toggleNames[$toggle];
+    return $toggleName;
+}
+
+
+
 function getDefaultTest() {
 
     $testDir = "";
@@ -805,6 +863,37 @@ function getDescription() {
     return $out;
 }
 
+
+function getToggleLinks() {
+    $show = getShowHide();
+    $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
+    $active = getActive();
+    
+    $toggleNames = getToggleNames();
+    $toggle = getToggle();
+
+    $links = array();
+    if (count($toggleNames) > 0) {
+        $links[] = "Display figure: ";
+    }
+    $i = 0;
+    foreach ($toggleNames as $toggleName) {
+        if ($toggleName == $toggle) {
+            $links[] = $toggleName;
+        } else {
+            $links[] = "<a href=\"summary.php?test=$testDir&active=$active&show=$show&toggle=$i\">$toggleName</a><br/>\n";
+        }
+        $i += 1;
+    }
+    $table = new Table();
+    $table->addRow($links, array("align=\"left\" width=\"100\""));
+    return $table->write();
+    
+}
+
 function writeTable_metadata() {
 
     $testDir = getDefaultTest();
@@ -855,17 +944,19 @@ function writeMappedFigures($suffix="map") {
 
     $d = @dir("$testDir");
     $imFiles = array();
-    while(false !== ($f = $d->read())) {
+    while( false !== ($f = $d->read())) {
         if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
         $imFiles[] = $f;
     }
     asort($imFiles);
     
+    $toggle = getToggle();
+    
     foreach ($imFiles as $f) {
         $base = preg_replace("/\.(png|PNG|jpg|JPG)/", "", $f);
         $mapfile = $base . "." . $suffix;
 
-        if (! preg_match("/$active/", $f) and $suffix != 'navmap') { continue; }
+        if (! preg_match("/${toggle}.*$active/", $f) and $suffix != 'navmap') { continue; }
 
         # get the image path
         $path = "$testDir/$f";
@@ -880,7 +971,7 @@ function writeMappedFigures($suffix="map") {
         $prep = $db->prepare($cmd);
         $prep->execute(array($f));
         $result = $prep->fetchColumn();
-
+        
         # load the map
         $mapString = "<map id=\"$base\" name=\"$base\">\n";
         $mapList = file($mapPath);
@@ -938,8 +1029,9 @@ function writeMappedFigures($suffix="map") {
             $img->addRow(array("Show <a href=\"summary.php?test=$testDir&active=all\">all</a>"));
         }
         $img->addRow(array($imgDiv->write() )); #"<center>".$imgDiv->write()."</center>"));
-        $img->addRow(array("<b>Figure $figNum.$j</b>: ".$result));
+        $img->addRow(array("<b>Figure $figNum.$j</b>: $result"));
         $img->addRow(array("<b>$f</b>: timestamp=$mtime"));
+
         $out .= $img->write();
         $out .= $mapString;
         $out .= "<br/>";
@@ -960,13 +1052,21 @@ function writeFigures() {
     $active = getActive();
     $d = @dir($testDir);
 
-    $j = 0;
-    $out = "";
+    $figures = array();
     while( false !== ($f = $d->read())) {
         if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
-
         if (! preg_match("/$active/", $f)) { continue; }
+        $figures[] = $f;
+    }
+    asort($figures);
+    
+    $toggle = getToggle();
+    
+    $j = 0;
+    $out = "";
+    foreach ($figures as $f) {
 
+        if (! preg_match("/$toggle/", $f) ) { continue; }
         
         # get the image path
         $path = "$testDir/$f";
@@ -1448,21 +1548,21 @@ function writeTable_SummarizeAllGroups() {
         }
 
         $nFail = $nTest - $nPass;
-        $passLink = tfColor("$nPass / $nFail", ($nPass==$nTest));
-        $failRate = "n/a";
+        $failRate = 0; #"n/a";
         if ($nTest > 0) {
             $failRate = 1.0 - 1.0*$nPass/$nTest;
-            $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
+            #$failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
         }
         if ($lastUpdate > 0) {
             $timestampStr = date("Y-m-d H:i", $lastUpdate);
         } else {
             $timestampStr = "n/a";
         }
+        $passLink = tfColor(sprintf("$nFail / %.1f", 100.0*$failRate), ($nPass==$nTest));
 
         $nTestSetsFail = $nTestSets - $nTestSetsPass;
         $row = array($iGroup, $testLink, $timestampStr,
-                     $nTestSets, "$nTestSetsPass / $nTestSetsFail", $nTest, $passLink, $failRate);
+                     "$nTestSets / $nTestSetsFail", $nTest, $passLink);
         $rows[] = $row;
         $groupShowing[] = $group;
         $iGroup += 1;
@@ -1516,13 +1616,13 @@ function writeTable_SummarizeAllGroups() {
         
         $nTestSetsFail = $nTestSets - $nTestSetsPass;
         $nFail = $nTest - $nPass;
-        $failRate = ($nTest > 0) ? sprintf("%.3f", 1.0*$nFail/$nTest) : "n/a";
-        $failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
+        $failRate = ($nTest > 0) ? sprintf("%.3f", 1.0*$nFail/$nTest) : 0; #"n/a";
+        #$failRate = tfColor(sprintf("%.3f", $failRate), ($failRate == 0.0));
 
-        $passLink = tfColor("$nPass / $nFail", ($nPass==$nTest));
+        $passLink = tfColor(sprintf("$nFail / %.1f", 100.0*$failRate), ($nPass==$nTest));
         
         $row = array("n=".$nMatch, $specialGroupLabels[$sg], "n/a",
-                     $nTestSets, "$nTestSetsPass / $nTestSetsFail", $nTest, $passLink, $failRate);
+                     "$nTestSets / $nTestSetsFail", $nTest, $passLink);
 
         $i = 5;
         foreach ($extraKeys as $k) {
@@ -1551,11 +1651,10 @@ function writeTable_SummarizeAllGroups() {
     #$tdAtt = array();
     $pSymb = "Pass"; #"<font color=\"#009900\">&#x2713;</font>";
     $fSymb = "Fail"; #"<font color=\"#990000\">X</font>";
-    $head= array("No.", "Test", "mtime", "Sets", "$pSymb/$fSymb", "Tests", "$pSymb/$fSymb", "Fail Rate");
-    $tdAttribs = array("align=\"left\"", "align=\"left\"", "align=\"left\"",
+    $head= array("No.", "Test", "mtime", "Sets/$fSymb", "Tests", "$fSymb / %");
+    $tdAttribs = array("align=\"left\"", "align=\"left\"", # "align=\"left\"",
                        "align=\"right\"", "align=\"right\"",
-                       "align=\"right\"", "align=\"right\"",
-                       "align=\"right\"" );
+                       "align=\"right\"", "align=\"right\"");
 
     foreach ($extraKeys as $k) {
         $head[] = $k;
