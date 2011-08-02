@@ -131,7 +131,7 @@ function getTestLinksThisGroup($page) {
     $groupNames = array_keys($allGroups);
 
     # handle the unnamed group possibility
-    $index0 = ($groupNames[0] === "" and (count($groupNames) > 1) ) ? 1 : 0;
+    $index0 = ( (count($groupNames) > 0) and $groupNames[0] === "" and (count($groupNames) > 1) ) ? 1 : 0;
     
     $index = array_search($group, $groupNames);
 
@@ -144,7 +144,7 @@ function getTestLinksThisGroup($page) {
     } else {
         $groupDirs["<<- prev-group$space(none)"] = array("None", "");
     }
-    if ($index < count($groupNames)-1) {
+    if ($index and $index < count($groupNames)-1) {
         $next = $groupNames[$index+1];
         $groupDirs["next-group ->>$space($next)"] = array($next, "test_${next}_${testName}");
     } else {
@@ -1628,10 +1628,13 @@ function writeTable_SummarizeAllGroups() {
         foreach ($extraKeys as $k) {
             if (array_key_exists($i, $arr)) {
                 $values = $arr[$i];
+		$mean = array_sum($values)/$nMatch;
+		$stdev = stdev($values);
                 if (preg_match("/^n/", $k)) {
-                    $entry = sprintf("<div title=\"&plusmn;%d\">%d</div>", stdev($values), array_sum($values)/$nMatch);
+                    $entry = sprintf("<div title=\"&plusmn;%d\">%d</div>", $stdev, $mean);
                 } else {
-                    $entry = sprintf("<div title=\"&plusmn;%.2f\">%.2f</div>", stdev($values), array_sum($values)/$nMatch);
+		    $fmt = ($mean > 0.1) ? "%.2f" : "%.3f";
+                    $entry = sprintf("<div title=\"&plusmn;%.2f\">$fmt</div>", $stdev, $mean);
                 }                    
                     
                 $row[] = $entry;

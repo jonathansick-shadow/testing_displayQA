@@ -280,7 +280,7 @@ class TestSet(object):
 
             for k, v in extras.items():
                 reg, displabel, units, values = v
-                if re.search(reg, label):
+                if re.search(reg, label) and not re.search("^99\.", str(vlu[0])):
                     extras[k][3].append(vlu[0])
 
         # encode any extras
