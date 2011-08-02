@@ -1683,7 +1683,8 @@ function writeTable_SummarizeAllGroups() {
                 if (preg_match("/^n/", $k)) {
                     $row[] = sprintf("<div title=\"&plusmn;%d %s\">%d</div>", $e, $u, $v);
                 } else {
-                    $row[] = sprintf("<div title=\"&plusmn;%.2f %s\">%.2f</div>", $e, $u, $v);
+		    $fmt = (floatval($v) < 0.1) ? "%.3f" : "%.2f";
+                    $row[] = sprintf("<div title=\"&plusmn;%.2f %s\">$fmt</div>", $e, $u, $v);
                 }
             } else {
                 $row[] = "";
