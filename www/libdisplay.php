@@ -1634,7 +1634,7 @@ function writeTable_SummarizeAllGroups() {
                     $entry = sprintf("<div title=\"&plusmn;%d\">%d</div>", $stdev, $mean);
                 } else {
 		    $fmt = ($mean > 0.1) ? "%.2f" : "%.3f";
-                    $entry = sprintf("<div title=\"&plusmn;%.2f\">$fmt</div>", $stdev, $mean);
+                    $entry = sprintf("<div title=\"&plusmn;$fmt\">$fmt</div>", $stdev, $mean);
                 }                    
                     
                 $row[] = $entry;
@@ -1684,7 +1684,7 @@ function writeTable_SummarizeAllGroups() {
                     $row[] = sprintf("<div title=\"&plusmn;%d %s\">%d</div>", $e, $u, $v);
                 } else {
 		    $fmt = (floatval($v) < 0.1) ? "%.3f" : "%.2f";
-                    $row[] = sprintf("<div title=\"&plusmn;%.2f %s\">$fmt</div>", $e, $u, $v);
+                    $row[] = sprintf("<div title=\"&plusmn;$fmt %s\">$fmt</div>", $e, $u, $v);
                 }
             } else {
                 $row[] = "";
