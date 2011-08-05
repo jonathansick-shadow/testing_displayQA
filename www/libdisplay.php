@@ -1815,4 +1815,210 @@ function displayTable_EupsSetups() {
 
 
 
-?>
+
+function getRegex($label) {
+    $regex = "abcdefg";
+    if (array_key_exists($label, $_GET)) {
+        $regex = $_GET[$label];
+        setcookie('displayQA_'.$label, $regex);
+    } elseif (array_key_exists('displayQA_'.$label, $_COOKIE)) {
+        $regex = $_COOKIE['displayQA_'.$label];
+    }
+    # sanity?
+
+    # must be set (otherwise, would match everything!)
+    if (strlen($regex) == 0) { $regex = "abcdefg"; }
+
+    return $regex;
+}
+
+
+function getFloat($label) {
+    $value = "";
+    if (array_key_exists($label, $_GET)) {
+        $value = $_GET[$label];
+        setcookie('displayQA_'.$label, $value);
+    } elseif (array_key_exists('displayQA_'.$label, $_COOKIE)) {
+        $value = $_COOKIE['displayQA_'.$label];
+    }
+    # sanity?
+
+    # must be a float
+    if (!preg_match("/^[+-]?\d+\.?\d*$/", $value)) { $value = ""; }
+    
+    return $value;
+}
+
+
+
+function failureSelectionBoxes() {
+
+    #test regex box
+    $testregex = getRegex('testregex');
+    $testregexBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"testregex\" value=\"$testregex\">\n";
+    $labelregex = getRegex('labelregex');
+    $labelregexBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"labelregex\" value=\"$labelregex\">\n";
+    $lo = getFloat('lo');
+    $loBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"lo\" value=\"$lo\">\n";
+    $hi = getFloat('hi');
+    $hiBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"hi\" value=\"$hi\">\n";
+
+    $nshow = getFloat('nshow');
+    $nshowBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"nshow\" value=\"$nshow\">\n";
+    
+    #submit
+    $submit = "<input type=\"submit\" value-\"Compute\" class=\"button\"/>\n";
+    
+    $table = new Table();
+    $table->addRow(
+        array(
+            "<b>Test(reg.ex.): ".$testregexBox,
+            "<b>Label(reg.ex.): ".$labelregexBox,
+            "<b>Low(float): ".$loBox,
+            "<b>High(float): ".$hiBox,
+            "<b>N-show(int): ".$nshowBox,
+            $submit
+            )
+        );
+
+    
+    
+    #build the form
+    $form = "<form method=\"get\" action=\"failures.php\">\n";
+    $form .= $table->write();
+    $form .= "</form>";
+
+    return $form;
+}
+
+
+
+function loadFailureCache() {
+    
+
+    static $alreadyLoaded = false;
+    static $results = array();
+    static $figures = array();
+
+    
+    if ($alreadyLoaded) {
+        return array($results, $figures);
+    } else {
+        if (!file_exists("db.sqlite3")) {
+            return array(-1, -1);
+        }
+        $db = connect("."); #$testDir);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try {
+            $testCmd = "select * from failures;";
+            $prep = $db->prepare($testCmd);
+            $prep->execute();
+            $results = $prep->fetchAll();
+        } catch (PDOException $e) {
+            return array(-1, -1);
+        }
+
+        try {
+            $testCmd = "select * from allfigures;";
+            $prep = $db->prepare($testCmd);
+            $prep->execute();
+            $figures = $prep->fetchAll();
+        } catch (PDOException $e) {
+            return array(-1, -1);
+        }
+        
+        
+        $alreadyLoaded = true;
+    }
+    
+    return array($results, $figures);
+}
+
+
+
+function listFailures() {
+
+    list($failureList, $figureList) = loadFailureCache();
+
+    if ($failureList == -1 or $figureList == -1) {
+        return;
+    }
+    
+    $figLookup = array();
+    foreach ($figureList as $fig) {
+        list($id, $tstamp, $path, $caption) = $fig;
+        $testDir = basename(dirname($path));
+        $figname = basename($path);
+        $base = basename($path, ".png");
+
+        $s = preg_replace('/([^-])-([^-])/', '\1QQQ\2', $base); 
+        $s = preg_split("/QQQ/", $s);
+        $tag = trim($s[count($s)-1]);
+        
+        if (!array_key_exists($testDir, $figLookup)) {
+            #echo "new testDir $testDir $tag $figname<br/>";
+            $figLookup[$testDir] = array($tag => array($figname));
+        } else {
+            if (!array_key_exists($tag, $figLookup[$testDir])) {
+                #echo "new tag $testDir $tag $figname<br/>";
+                $figLookup[$testDir][$tag] = array($figname);
+            } else {
+                #echo "new figname $testDir $tag $figname<br/>";
+                $figLookup[$testDir][$tag][] = $figname;
+            }
+        }
+    }
+
+    $testregex = getRegex('testregex');
+    $labelregex = getRegex('labelregex');
+
+    $newLo = getFloat('lo');
+    $newHi = getFloat('hi');
+    $nShow = intval(getFloat('nshow'));
+    if (!$nShow) { $nShow = count($failureList); }
+    
+    $out = "";
+    $i = 0;
+    foreach ($failureList as $failure) {
+        list($id, $tstamp, $testandlabel, $value, $lo, $hi) = $failure;
+        $arr = preg_split("/QQQ/", $testandlabel);
+        list($testDir, $label) = $arr;
+        if (!preg_match("/$testregex/", $testDir) or !preg_match("/$labelregex/",$label)) { continue; }
+        $valueStr = sprintf("%.4f", $value);
+
+        $loOrig = $lo;
+        $hiOrig = $hi;
+        if (strlen($newLo) > 0 and $newLo < $lo) { $lo = $newLo; }
+        if (strlen($newHi) > 0 and $newHi > $hi) { $hi = $newHi; }
+        $loStr = ($newLo > $loOrig) ? sprintf("<font color=\"#ff0000\">%.4f (unchanged)</font>", $lo) :
+            sprintf("%.4f", $lo);
+        $hiStr = ($newHi < $hiOrig) ? sprintf("<font color=\"#ff0000\">%.4f (unchanged)</font>", $hi) :
+            sprintf("%.4f", $hi);
+
+        $s = preg_split("/\s*-\*-\s*/", $label);
+        $tag = trim($s[count($s)-1]);
+        #echo $testDir." ".$tag."<br/>";
+
+        $figs = array();
+        if (array_key_exists($testDir, $figLookup) and array_key_exists($tag, $figLookup[$testDir]) ) {
+            #echo "Have it<br/>";
+            $figs = $figLookup[$testDir][$tag];
+        }
+        
+        $cmp = verifyTest(floatval($value), floatval($lo), floatval($hi));
+        if ($cmp) {
+            $table = new Table();
+            $table->addHeader(array("Test", "Label", "Value", "Range"));
+            $link = "<a href=\"summary.php?test=$testDir&active=$tag\">$testDir</a>\n";
+            $table->addRow(array($link, $label, $valueStr, "[$loStr, $hiStr]"));
+            $out .= $table->write();
+            foreach ($figs as $f) {
+                $out .= "<img src=\"$testDir/$f\">\n";
+            }
+        }
+        $i += 1;
+        if ($i > $nShow - 1) { break; }
+        
+    }
+    return $out;
+}

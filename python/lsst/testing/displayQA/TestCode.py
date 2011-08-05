@@ -151,13 +151,25 @@ class TestSet(object):
         # create the cache table
         if self.wwwCache:
             self.countsTable = "counts"
-            self.countKeys = ["test text", "ntest integer", "npass integer", "dataset text",
-                              "oldest timestamp", "newest timestamp", "extras text"]
-            keys = self.stdKeys + self.countKeys
-            cmd = "create table if not exists " + self.countsTable + " ("+",".join(keys)+")"
-            curs = self.cacheConnect()
-            curs.execute(cmd)
-            self.cacheClose()
+            self.failuresTable = "failures"
+            self.allFigTable = "allfigures"
+            self.cacheTables = {
+                self.countsTable : ["test text", "ntest integer", "npass integer", "dataset text",
+                                   "oldest timestamp", "newest timestamp", "extras text"],
+                self.failuresTable : ["testandlabel text unique", "value double",
+                                      "lowerlimit double", "upperlimit double", "comment text"],
+                self.allFigTable : ["path text", "caption text"],
+                }
+            
+            self.countKeys = self.cacheTables[self.countsTable]
+            self.failureKeys = self.cacheTables[self.failuresTable]
+            
+            for k,v in self.cacheTables.items():
+                keys = self.stdKeys + v
+                cmd = "create table if not exists " + k + " ("+",".join(keys)+")"
+                curs = self.cacheConnect()
+                curs.execute(cmd)
+                self.cacheClose()
         
 
     def cacheConnect(self):
@@ -315,6 +327,21 @@ class TestSet(object):
         replacements = dict( zip(keys, [self.testDir, ntest, npass, dataset, oldest, newest, extras]))
         self._insertOrUpdate(self.countsTable, replacements, ['test'], cache=True)
         self.cacheClose()
+
+
+    def _writeFailure(self, label, value, lo, hi):
+        """Cache failure info for this TestSet
+
+	@param *args A dict of key,value pairs, or a key and value
+	"""
+
+        #curs = self.cacheConnect()
+        keys = [x.split()[0] for x in self.failureKeys]
+        testandlabel = self.testDir + "QQQ" + label
+        replacements = dict( zip(keys, [testandlabel, value, lo, hi]))
+        self._insertOrUpdate(self.failuresTable, replacements, ['testandlabel'], cache=True)
+        #self.cacheClose()
+
         
     def _insertOrUpdate(self, table, replacements, selectKeys, cache=False):
         """Insert entries into a database table, overwrite if they already exist."""
@@ -364,6 +391,40 @@ class TestSet(object):
             self.addTest(test)
             
 
+    def updateFailures(self):
+
+        if self.wwwCache:
+
+            # load the summary
+            sql = "select label,entrytime,value,lowerlimit,upperlimit from summary"
+            self.curs.execute(sql)
+            results = self.curs.fetchall()
+
+            # write failures
+            curs = self.cacheConnect()            
+            for r in results:
+                label, etime, value, lo, hi = r
+                cmp = self._verifyTest(value, lo, hi)
+                if cmp:
+                    self._writeFailure(str(label), value, lo, hi)
+            self.cacheClose()
+
+            # load the figures
+            sql = "select filename from figure"
+            self.curs.execute(sql)
+            figures = self.curs.fetchall()
+
+            # write allfigtable
+            keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
+            curs = self.cacheConnect()
+            for f in figures:
+                filename, = f
+                path = str(os.path.join(self.wwwDir, filename))
+                replacements = dict( zip(keys, [path, ""]))
+                self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
+            self.cacheClose()
+    
+
     def updateCounts(self, dataset=None, increment=[0,0]):
         ntest, npass = increment
 
@@ -401,6 +462,10 @@ class TestSet(object):
         backtrace = ""
         try:
             if not passed:
+                if self.wwwCache:
+                    curs = self.cacheConnect()
+                    self._writeFailure(test.label, test.value, test.limits[0], test.limits[1])
+                    self.cacheClose()
                 raise TestFailError("Failed test '"+test.label+"': " +
                                         "value '" + str(test.value) + "' not in range '" +
                                         str(test.limits)+"'.")
@@ -486,7 +551,13 @@ class TestSet(object):
         keys = [x.split()[0] for x in self.tables[self.figTable]]
         replacements = dict( zip(keys, [filename, caption]))
         self._insertOrUpdate(self.figTable, replacements, ['filename'])
-        
+
+        if self.wwwCache:
+            curs = self.cacheConnect()
+            keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
+            replacements = dict( zip(keys, [path, caption]))
+            self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
+            self.cacheClose()
         
     def importLogs(self, logFiles):
         """Import logs from logFiles output by pipette."""

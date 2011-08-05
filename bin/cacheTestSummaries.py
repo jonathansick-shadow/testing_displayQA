@@ -90,6 +90,9 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
         ts = dispQa.TestSet(label=label, group=group, alias=alias, wwwCache=True)
         ntest, npass, dataset, oldest, newest, extras = \
                ts.updateCounts(increment=[int(ntestAdjust), int(npassAdjust)])
+        
+        ts.updateFailures()
+        
         if len(group.strip()) == 0:
             group = "top-level"
         print "%-12s %-24s " % (group, label)
