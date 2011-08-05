@@ -401,14 +401,21 @@ class TestSet(object):
             results = self.curs.fetchall()
 
             # write failures
+            failSet = []
             curs = self.cacheConnect()            
             for r in results:
                 label, etime, value, lo, hi = r
-                cmp = self._verifyTest(value, lo, hi)
-                if cmp:
-                    self._writeFailure(str(label), value, lo, hi)
+                if re.search("-*-", label):
+                    labelsplit = label.split("-*-")
+                    tag = labelsplit[1].strip()
+                    failSet.append(tag)
+                    cmp = self._verifyTest(value, lo, hi)
+                    if cmp:
+                        self._writeFailure(str(label), value, lo, hi)
             self.cacheClose()
 
+            failSet = set(failSet)
+            
             # load the figures
             sql = "select filename from figure"
             self.curs.execute(sql)
@@ -419,9 +426,16 @@ class TestSet(object):
             curs = self.cacheConnect()
             for f in figures:
                 filename, = f
-                path = str(os.path.join(self.wwwDir, filename))
-                replacements = dict( zip(keys, [path, ""]))
-                self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
+                filebase = re.sub(".png", "", filename)
+                if re.search("[^-]-[^-]", filebase):
+                    fileqqq = re.sub("([^-])-([^-])", r"\1QQQ\2", filebase)
+                    tag = fileqqq.split("QQQ")[-1]
+                    tag = tag.strip()
+                    if tag in failSet:
+                        #print filebase
+                        path = str(os.path.join(self.wwwDir, filename))
+                        replacements = dict( zip(keys, [path, ""]))
+                        self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
             self.cacheClose()
     
 
