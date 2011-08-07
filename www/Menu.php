@@ -15,6 +15,7 @@ class Menu {
         # a dictionary entry for each tab.
         # contains: (1) text on the tab, (2) path to link
         $this->_tabs["home"] = array("Home", "index.php");
+        $this->_tabs["testlist"] = array("TestList", "testlist.php");
         $this->_tabs["group"] = array("Group", "group.php");
         $this->_tabs["summ"] = array("Summary", "summary.php");
         $this->_tabs["fail"] = array("Failures", "failures.php");

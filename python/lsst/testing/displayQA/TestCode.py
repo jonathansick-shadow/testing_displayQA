@@ -329,7 +329,7 @@ class TestSet(object):
         self.cacheClose()
 
 
-    def _writeFailure(self, label, value, lo, hi):
+    def _writeFailure(self, label, value, lo, hi, overwrite=False):
         """Cache failure info for this TestSet
 
 	@param *args A dict of key,value pairs, or a key and value
@@ -339,7 +339,10 @@ class TestSet(object):
         keys = [x.split()[0] for x in self.failureKeys]
         testandlabel = self.testDir + "QQQ" + label
         replacements = dict( zip(keys, [testandlabel, value, lo, hi]))
-        self._insertOrUpdate(self.failuresTable, replacements, ['testandlabel'], cache=True)
+        if overwrite:
+            self._insertOrUpdate(self.failuresTable, replacements, ['testandlabel'], cache=True)
+        else:
+            self._pureInsert(self.failuresTable, replacements, ['testandlabel'], cache=True)
         #self.cacheClose()
 
         
@@ -385,13 +388,41 @@ class TestSet(object):
             self.cacheConn.commit()
 
 
+
+    def _pureInsert(self, table, replacements, selectKeys, cache=False):
+        """Insert entries into a database table, overwrite if they already exist."""
+        
+        if not cache:
+            self.curs.execute(cmd)
+        else:
+            self.cacheCurs.execute(cmd)
+
+        # insert the new data
+        keys = []
+        values = []
+        for k,v in replacements.items():
+            keys.append(k)
+            values.append(v)
+        values = tuple(values)
+        inlist = " (id, entrytime,"+ ",".join(keys) + ") "
+        qmark = " (NULL, strftime('%s', 'now')," + ",".join("?"*len(values)) + ")"
+        cmd = "insert into "+table+inlist + " values " + qmark
+
+        if not cache:
+            self.curs.execute(cmd, values)
+            self.conn.commit()
+        else:
+            self.cacheCurs.execute(cmd, values)
+            self.cacheConn.commit()
+
+
     def addTests(self, testList):
 
         for test in testList:
             self.addTest(test)
             
 
-    def updateFailures(self):
+    def updateFailures(self, overwrite=False):
 
         if self.wwwCache:
 
@@ -411,7 +442,7 @@ class TestSet(object):
                     failSet.append(tag)
                     cmp = self._verifyTest(value, lo, hi)
                     if cmp:
-                        self._writeFailure(str(label), value, lo, hi)
+                        self._writeFailure(str(label), value, lo, hi, overwrite)
             self.cacheClose()
 
             failSet = set(failSet)
@@ -435,7 +466,11 @@ class TestSet(object):
                         #print filebase
                         path = str(os.path.join(self.wwwDir, filename))
                         replacements = dict( zip(keys, [path, ""]))
-                        self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
+                        if overwrite:
+                            self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
+                        else:
+                            self._pureInsert(self.allFigTable, replacements, ['path'], cache=True)
+
             self.cacheClose()
     
 

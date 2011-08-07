@@ -1184,10 +1184,10 @@ function writeTable_SummarizeAllTests() {
 
     ## go through all directories and look for .summary files
     $d = @dir($dir) or dir("");
-    $dirs = array();
-    while(false !== ($testDir = $d->read())) {
-        $dirs[] = $testDir;
-    }
+    $dirs = glob("test_".$group."_*"); #array();
+    #while(false !== ($testDir = $d->read())) {
+    #    $dirs[] = $testDir;
+    #}
     sort($dirs);
 
     $tdAttribs = array("align=\"left\"", "align=\"left\"",
@@ -1345,9 +1345,11 @@ function getAllTestDirsByGroupFromCache() {
     $dirs = array();
     foreach($results as $r) {
         $testDir = $r['test'];
-        if (!preg_match("/^test_.*/", $testDir)) {
+        if (substr($testDir, 0, 5) != 'test_') {
             continue;
         }
+        #if (!preg_match("/^test_.* /", $testDir)) { continue; }
+
         $parts = preg_split("/_/", $testDir);
         $group = $parts[1];
         if (array_key_exists($group, $dirs)) {
@@ -1816,8 +1818,8 @@ function displayTable_EupsSetups() {
 
 
 
-function getRegex($label) {
-    $regex = "abcdefg";
+function getRegex($label, $default="") {
+    $regex = $default;
     if (array_key_exists($label, $_GET)) {
         $regex = $_GET[$label];
         setcookie('displayQA_'.$label, $regex);
@@ -1827,13 +1829,13 @@ function getRegex($label) {
     # sanity?
 
     # must be set (otherwise, would match everything!)
-    if (strlen($regex) == 0) { $regex = "abcdefg"; }
+    if (strlen($regex) == 0) { $regex = $default; }
 
     return $regex;
 }
 
 
-function getFloat($label) {
+function getFloat($label, $default="") {
     $value = "";
     if (array_key_exists($label, $_GET)) {
         $value = $_GET[$label];
@@ -1854,16 +1856,16 @@ function getFloat($label) {
 function failureSelectionBoxes() {
 
     #test regex box
-    $testregex = getRegex('testregex');
+    $testregex = getRegex('testregex', 'psf-cat');
     $testregexBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"testregex\" value=\"$testregex\">\n";
-    $labelregex = getRegex('labelregex');
+    $labelregex = getRegex('labelregex', 'median');
     $labelregexBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"labelregex\" value=\"$labelregex\">\n";
     $lo = getFloat('lo');
     $loBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"lo\" value=\"$lo\">\n";
     $hi = getFloat('hi');
     $hiBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"hi\" value=\"$hi\">\n";
 
-    $nshow = getFloat('nshow');
+    $nshow = getFloat('nshow', '10');
     $nshowBox = "<input class=\"textinput\" type=\"text\" size=\"10\" name=\"nshow\" value=\"$nshow\">\n";
     
     #submit
@@ -1986,6 +1988,12 @@ function listFailures() {
         if (!preg_match("/$testregex/", $testDir) or !preg_match("/$labelregex/",$label)) { continue; }
         $valueStr = sprintf("%.4f", $value);
 
+        $group = "";
+        $parts = preg_split("/_/", $testDir);
+        if (count($parts) > 2) {
+            $group = $parts[1];
+        }
+        
         $loOrig = $lo;
         $hiOrig = $hi;
         if (strlen($newLo) > 0 and $newLo < $lo) { $lo = $newLo; }
@@ -2008,9 +2016,12 @@ function listFailures() {
         $cmp = verifyTest(floatval($value), floatval($lo), floatval($hi));
         if ($cmp) {
             $table = new Table();
-            $table->addHeader(array("Test", "Label", "Value", "Range"));
-            $link = "<a href=\"summary.php?test=$testDir&active=$tag\">$testDir</a>\n";
-            $table->addRow(array($link, $label, $valueStr, "[$loStr, $hiStr]"));
+            $table->addHeader(array("Test", "Label", "Value", "Range", "Select"));
+            $link = "<a href=\"summary.php?test=$testDir&active=$tag&group=$group\">$testDir</a>\n";
+            $checked = "";
+            $name = preg_replace("/\./", "DDD", $testandlabel);
+            $checkbox = "<input type=\"checkbox\" name=\"$name\" value=\"1\" $checked>";
+            $table->addRow(array($link, $label, $valueStr, "[$loStr, $hiStr]", $checkbox));
             $out .= $table->write();
             foreach ($figs as $f) {
                 $out .= "<img src=\"$testDir/$f\">\n";
@@ -2020,5 +2031,169 @@ function listFailures() {
         if ($i > $nShow - 1) { break; }
         
     }
-    return $out;
+    $form = "<form method=\"get\" action=\"selected.php\">\n";
+    $form .= $out; 
+    $form .= "<input type=\"submit\" value-\"Select\" class=\"button\"/>\n";
+    $form .= "</form>";
+    
+    return $form;
+}
+
+
+function listSelected() {
+
+    $get = $_GET;
+
+    $table = new Table();
+    foreach ($get as $testandlabel => $dummy) {
+        $testandlabel = preg_replace("/DDD/", ".", $testandlabel);
+        $arr = preg_split("/QQQ/", $testandlabel);
+        list($testDir, $label) = $arr;
+        $group = "";
+        $parts = preg_split("/_/", $testDir);
+        if (count($parts) > 2) {
+            $group = $parts[1];
+        }
+
+        $parts = preg_split("/_*-\*-_*/", $label);
+        $sensor = "";
+        $testLabel = "";
+        if (count($parts) > 1) {
+            $testLabel = $parts[0];
+            $sensor = $parts[1];
+        }
+
+        $link = "<a href=\"summary.php?test=$testDir&active=$sensor&group=$group\">$group $sensor</a>\n";
+        
+        $table->addRow(array($link, $testLabel));
+    }
+
+    return $table->write();
+}
+
+
+
+
+
+function writeTable_listTestResults() {
+
+    $groups = getGroupList();
+    
+    $summs = summarizeTestsFromCache();
+    #echo "have summs<br/>";
+    
+    $dirs = getAllTestDirsByGroup();
+    #echo "have testdirs<br/>";
+
+    # get a list of possible tests
+    $tests = array();
+    foreach ($dirs as $group => $testDirs) {
+        if (strlen(trim($group)) == 0) { continue; }
+        
+        foreach ($testDirs as $testDir) {
+            $parts = preg_split("/_/", $testDir);
+            $test = $parts[count($parts)-1];
+            $tests[$test] = 1;
+        }
+    }
+    
+    $tests = array_keys($tests);
+    sort($tests);
+    
+    $table = new Table();
+    $head = array("Group");
+    $attribs = array("align=\"left\"");
+    foreach ($tests as $test) {
+        #echo $test."<br/>";
+        $subparts = preg_split("/\./", $test);
+        $lab = substr($subparts[1], 0, 4);
+        if (count($subparts) > 2) {
+            $lab .= "<br/>".$subparts[2];
+        }
+        $head[] = $lab;
+        $attribs[] = "align=\"right\"";
+    }
+    $table->addHeader($head);
+
+    $nt = count($head);
+    $filters = array_fill(0, 5, array_fill(0, $nt, 0.0));
+    $filters[0][0] = "g";
+    $filters[1][0] = "r";
+    $filters[2][0] = "i";
+    $filters[3][0] = "z";
+    $filters[4][0] = "y";
+
+    $flookup = array("g"=>0, "r"=>1, "i"=>2, "z"=>3, "y"=>4);
+    $nfilters = array("g"=>0, "r"=>0, "i"=>0, "z"=>0, "y"=>0);
+    
+    $totals = array_fill(0, count($head), 0.0);
+    $totals[0] = "mean:";
+    $rows = array();
+    foreach ($groups as $group=>$n) {
+        if (strlen(trim($group)) == 0) { continue; }
+
+        $f = substr($group, -1);
+        $i_f = $flookup[$f];
+        $row = array($group);
+        $i = 1;
+        foreach ($tests as $test) {
+
+            $testDir = "test_${group}_$test";
+            $summ = $summs[$testDir];
+            $npass = $summ['npass'];
+            $ntest = $summ['ntest'];
+            $nfail = $ntest - $npass;
+            if ($ntest > 0) {
+                $failrate = floatval($nfail)/$ntest;
+            } else {
+                $failrate = 0.0;
+            }
+            $totals[$i] += $failrate;
+            $filters[$i_f][$i] += $failrate;
+            
+            $link = "<a href=\"summary.php?test=$testDir&active=all&group=$group\">".
+                tfColor(sprintf("%.1f", 100.0*$failrate), ($npass==$ntest))."</a>\n";
+            $row[] = $link;
+            $i += 1;
+        }
+        $nfilters[$f] += 1;
+        $rows[] = $row;
+    }
+
+    # grand totals
+    for($i=1; $i < count($totals); $i++) {
+        $failrate = 100.0*$totals[$i]/count($rows);
+        $totals[$i] = tfColor(sprintf("%.2f", $failrate), (abs($failrate) < 1.0e-6));
+    }
+    $table->addRow($totals, $attribs);
+    $table->addRow(array_fill(0, count($totals), "&nbsp;"));
+        
+
+    # totals per filter
+    foreach($filters as $farr) {
+        $f = $farr[0];
+        $i_f = $flookup[$f];
+        for($i=1; $i < count($filters[$i_f]); $i++) {
+            if ($nfilters[$f] > 0) {
+                $failrate = 100.0*$filters[$i_f][$i]/$nfilters[$f];
+                $filters[$i_f][$i] = tfColor(sprintf("%.2f", $failrate), (abs($failrate)<1.0e-6));
+            } else {
+                $filters[$i_f][$i] = "n/a";
+            }
+        }
+        $table->addRow($filters[$i_f], $attribs);
+    }
+    $table->addRow(array_fill(0, count($totals), "&nbsp;"));
+
+    # add the regular visit rows
+    $i = 0;
+    foreach($rows as $row) {
+        if ($i and $i%20==0) {
+            $table->addRow($head);
+        }
+        $table->addRow($row, $attribs);
+        $i += 1;
+    }
+    
+    return $table->write();
 }

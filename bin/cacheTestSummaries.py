@@ -9,7 +9,7 @@
 # Summary: 
 # 
 """
-%prog [options] rerun ntestAdjust npassAdjust
+%prog [options] rerun
 
 This program is used to adjust the number of tests and passed tests in the cache.
 It's only purpose to create a count cache for older runs which preceded caching.
@@ -33,7 +33,7 @@ import lsst.testing.displayQA as dispQa
 #
 #############################################################
 
-def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
+def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False, cachefailures=None):
 
     # verify that we have WWW_ROOT and TESTING_DISPLAYQA_DIR
     envVars = ['TESTING_DISPLAYQA_DIR']
@@ -90,8 +90,11 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
         ts = dispQa.TestSet(label=label, group=group, alias=alias, wwwCache=True)
         ntest, npass, dataset, oldest, newest, extras = \
                ts.updateCounts(increment=[int(ntestAdjust), int(npassAdjust)])
-        
-        ts.updateFailures()
+
+        # There could be *many* failures.  Must be specific or this will be very slow
+        if not cachefailures is None and re.search(cachefailures, ts.testDir):
+            print "Caching failures for ", ts.testDir
+            ts.updateFailures(True)
         
         if len(group.strip()) == 0:
             group = "top-level"
@@ -110,13 +113,13 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False):
 
 if __name__ == '__main__':
     parser = optparse.OptionParser(usage=__doc__)
+    parser.add_option("-c", "--cachefailures", default=None,
+                      help="Regex to specify which tests to cache failures (default=%default)")
     parser.add_option("-f", '--force', default=False, action="store_true",
                       help="Force install if versions differ (default=%default)")
-    parser.add_option("-p", "--npass", default=0, type=int,
-                      help="Adjust npass by this amount (default=%default)")
+    parser.add_option("-n", "--ntestpass", default="0:0", 
+                      help="Adjust ntest:npass by this amount (default=%default)")
     parser.add_option('-r', '--root', default=None, help="Override WWW_ROOT (default=%default")
-    parser.add_option("-t", "--ntest", default=0, type=int,
-                      help="Adjust ntest by this amount (default=%default)")
     opts, args = parser.parse_args()
 
     if len(args) != 1:
@@ -124,6 +127,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     qaName, = args
-    
-    main(qaName, opts.ntest, opts.npass, opts.root, opts.force)
+
+    ntest, npass = map(int, opts.ntestpass.split(":"))
+    main(qaName, ntest, npass, opts.root, opts.force, opts.cachefailures)
     
