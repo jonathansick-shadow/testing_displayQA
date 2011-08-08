@@ -2134,7 +2134,8 @@ function writeTable_listTestResults() {
 
         $f = substr($group, -1);
         $i_f = $flookup[$f];
-        $row = array($group);
+        $glink = "<a href=\"group.php?group=$group\" title=\"$group\">".$group."</a>";
+        $row = array($glink);
         $i = 1;
         foreach ($tests as $test) {
 
