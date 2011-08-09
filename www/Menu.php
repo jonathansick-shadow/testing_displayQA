@@ -14,11 +14,26 @@ class Menu {
 
         # a dictionary entry for each tab.
         # contains: (1) text on the tab, (2) path to link
-        $this->_tabs["home"] = array("Home", "index.php");
-        $this->_tabs["testlist"] = array("TestList", "testlist.php");
-        $this->_tabs["group"] = array("Group", "group.php");
-        $this->_tabs["summ"] = array("Summary", "summary.php");
-        $this->_tabs["fail"] = array("Failures", "failures.php");
+        $this->_tabs["home"]      = array("Home", "index.php");
+        $this->_tabs["testlist"]  = array("TestList", "testlist.php");
+        $this->_tabs["group"]     = array("Group", "group.php");
+        $this->_tabs["summ"]      = array("Summary", "summary.php");
+	$haveFailureTable = false;
+	if (file_exists('db.sqlite3')) {
+	    $sql = "SELECT count(*) FROM failures;";
+	    $db = connect(".");
+            $prep = $db->prepare($sql);
+            $prep->execute();
+            $results = $prep->fetchAll();
+
+	    if (intval($results[0][0]) > 0) {
+		$haveFailureTable = true;
+	    }
+	}
+	if ($haveFailureTable) {
+	    $this->_tabs["fail"] = array("Failures", "failures.php");
+	}
+	
         #$this->_tabs["log"]  = array("Logs",    "logs.php");
         #$this->_tabs["sdqa"] = array("SDQA",    "sdqa.php");
         #$this->_tabs["eups"] = array("EUPS",    "eups.php");

@@ -94,7 +94,7 @@ def main(qaName, ntestAdjust, npassAdjust, wwwRoot=None, force=False, cachefailu
         # There could be *many* failures.  Must be specific or this will be very slow
         if not cachefailures is None and re.search(cachefailures, ts.testDir):
             print "Caching failures for ", ts.testDir
-            ts.updateFailures(True)
+            ts.updateFailures(False)
         
         if len(group.strip()) == 0:
             group = "top-level"

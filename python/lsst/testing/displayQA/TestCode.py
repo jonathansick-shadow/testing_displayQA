@@ -329,7 +329,7 @@ class TestSet(object):
         self.cacheClose()
 
 
-    def _writeFailure(self, label, value, lo, hi, overwrite=False):
+    def _writeFailure(self, label, value, lo, hi, overwrite=True):
         """Cache failure info for this TestSet
 
 	@param *args A dict of key,value pairs, or a key and value
@@ -392,11 +392,6 @@ class TestSet(object):
     def _pureInsert(self, table, replacements, selectKeys, cache=False):
         """Insert entries into a database table, overwrite if they already exist."""
         
-        if not cache:
-            self.curs.execute(cmd)
-        else:
-            self.cacheCurs.execute(cmd)
-
         # insert the new data
         keys = []
         values = []
@@ -422,7 +417,7 @@ class TestSet(object):
             self.addTest(test)
             
 
-    def updateFailures(self, overwrite=False):
+    def updateFailures(self, overwrite=True):
 
         if self.wwwCache:
 
