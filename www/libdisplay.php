@@ -1996,11 +1996,11 @@ function listFailures() {
         
         $loOrig = $lo;
         $hiOrig = $hi;
-        if (strlen($newLo) > 0 and $newLo < $lo) { $lo = $newLo; }
-        if (strlen($newHi) > 0 and $newHi > $hi) { $hi = $newHi; }
-        $loStr = ($newLo > $loOrig) ? sprintf("<font color=\"#ff0000\">%.4f (unchanged)</font>", $lo) :
+        if (strlen($newLo) > 0 and ($newLo < $lo) or ($newLo > $hi)) { $lo = $newLo; }
+        if (strlen($newHi) > 0 and ($newHi > $hi) or ($newHi < $lo)) { $hi = $newHi; }
+        $loStr = ($lo == $loOrig) ? sprintf("<font color=\"#ff0000\">%.4f (unchanged)</font>", $lo) :
             sprintf("%.4f", $lo);
-        $hiStr = ($newHi < $hiOrig) ? sprintf("<font color=\"#ff0000\">%.4f (unchanged)</font>", $hi) :
+        $hiStr = ($hi == $hiOrig) ? sprintf("<font color=\"#ff0000\">%.4f (unchanged)</font>", $hi) :
             sprintf("%.4f", $hi);
 
         $s = preg_split("/\s*-\*-\s*/", $label);
