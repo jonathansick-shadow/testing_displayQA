@@ -536,17 +536,23 @@ function writeTable_timestamps($group=".*") {
         $min = 0;
         $max = 0;
         $n = 0;
-        $d = @dir(".");
-        while(false !== ($f = $d->read())) {
+        
+        $dirs = glob("test_".$group."_*"); #array();
+        sort($dirs);
+        
+        #$d = @dir(".");
+        foreach($dirs as $f) {
+            #while(false !== ($f = $d->read())) {
             if (! is_dir($f) or preg_match("/^\./", $f)) { continue; }
             
-            if (! preg_match("/^test_$group/", $f)) { continue; }
+            #if (! preg_match("/^test_$group/", $f)) { continue; }
             
             $db = connect($f);
             $cmd = "select count(entrytime),min(entrytime),max(entrytime) from summary";
             $prep = $db->prepare($cmd);
             $prep->execute();
             $results = $prep->fetchAll();
+            $db = null;
             $result = $results[0];
             $thisN = 0;
             if ($i == 0 or $n == 0) {
@@ -609,7 +615,8 @@ function writeTable_ListOfTestResults() {
     $prep = $db->prepare($cmd);
     $prep->execute();
     $result = $prep->fetchAll();
-        
+    $db = null;
+    
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
                        "align=\"right\" width=\"50\"", "align=\"center\"",
                        "align=\"left\" width=\"200\"");
@@ -656,7 +663,7 @@ function writeTable_ListOfTestResults() {
         $table->addRow(array($test, $mtime,
                              hiLoColor($value, $lo, $hi), "[$loStr, $hiStr]", $comment), $tdAttribs);
     }
-    $db = NULL;
+
     return $table->write();
     
 }
@@ -693,6 +700,7 @@ function writeTable_OneTestResult($label) {
     $prep = $db->prepare($cmd);
     $prep->execute(array($label));
     $result = $prep->fetchAll();
+    $db = null;
     
     $tdAttribs = array("align=\"left\"", "align=\"center\"",
                        "align=\"right\"", "align=\"center\"",
@@ -717,7 +725,6 @@ function writeTable_OneTestResult($label) {
         #$table->addRow(array($test, date("Y-m-d H:i:s", $timestamp),
         #                    $lo, hiLoColor($value, $pass), $hi, $comment));
     }
-    $db = NULL;
 
     return $table->write();
 }
@@ -739,12 +746,12 @@ function write_OneBacktrace($label) {
     $prep = $db->prepare($cmd);
     $prep->execute(array($label));
     $result = $prep->fetchAll();
-
+    $db = null;
+    
     $backtrace = "";
     foreach ($result as $r) {
         $backtrace .= $r['backtrace'];
     }
-    $db = NULL;
 
     $out .= preg_replace("/\n/", "<br/>\n", $backtrace);
     $out = preg_replace("/(\t|\s{4})/", "&nbsp;&nbsp;", $out);
@@ -811,6 +818,7 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
                 $prep = $db->prepare($cmd);
                 $prep->execute(array($key));
                 $results = $prep->fetchAll();
+                $db = null;
                 
                 foreach ($results as $r) {
                     $values[] = $r['value'];
@@ -844,7 +852,8 @@ function getDescription() {
     $prep = $db->prepare($cmd);
     $prep->execute();
     $results = $prep->fetchAll();
-
+    $db = null;
+    
     $description = "";
     foreach ($results as $r) {
         if (preg_match("/[dD]escription/", $r['key'])) {
@@ -909,7 +918,8 @@ function writeTable_metadata() {
     $prep = $db->prepare($cmd);
     $prep->execute();
     $results = $prep->fetchAll();
-
+    $db = null;
+    
     foreach ($results as $r) {
         if (preg_match("/[dD]escription/", $r['key'])) {
             continue;
@@ -971,6 +981,7 @@ function writeMappedFigures($suffix="map") {
         $prep = $db->prepare($cmd);
         $prep->execute(array($f));
         $result = $prep->fetchColumn();
+        $db = null;
         
         # load the map
         $mapString = "<map id=\"$base\" name=\"$base\">\n";
@@ -1061,6 +1072,20 @@ function writeFigures() {
     asort($figures);
     
     $toggle = getToggle();
+
+    
+    ## get the captions
+    $db = connect($testDir);
+    $cmd = "select filename, caption from figure";
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $results = $prep->fetchAll();
+    $db = null;
+
+    $captions = array();
+    foreach ($results as $r) {
+        $captions[$r['filename']] = $r['caption'];
+    }
     
     $j = 0;
     $out = "";
@@ -1081,13 +1106,6 @@ function writeFigures() {
 
         $mtime = date("Y-m_d H:i:s", filemtime($path));
 
-        # get the caption
-        $db = connect($testDir);
-        $cmd = "select caption from figure where filename = ?";
-        $prep = $db->prepare($cmd);
-        $prep->execute(array($f));
-        $result = $prep->fetchColumn();
-
         # tiff must be handled specially
          
         if (preg_match("/.tiff$/", $path)) {
@@ -1099,7 +1117,7 @@ function writeFigures() {
         
         $img = new Table();
         $img->addRow(array("$imgTag")); #<center>$imgTag</center>"));
-        $img->addRow(array("<b>Figure 2.$j</b>:".$result));
+        $img->addRow(array("<b>Figure 2.$j</b>:".$captions[$f]));
         $img->addRow(array("<b>$f</b>: timestamp=$mtime"));
         $out .= $img->write();
         $out .= "<br/>";
@@ -1146,6 +1164,7 @@ function summarizeTestByCounting($testDir) {
     $prep = $db->prepare($passCmd);
     $prep->execute();
     $results = $prep->fetchAll();
+    $db = null;
 
     $nTest = 0;
     $nPass = 0;
@@ -1180,7 +1199,11 @@ function summarizeTestByCounting($testDir) {
 function writeTable_SummarizeAllTests() {
     $dir = "./";
 
+    $msg = "";
+    
     $group = getGroup();
+
+    $msg .= "group: $group ".date("H:i:s")."<br/>";
 
     ## go through all directories and look for .summary files
     $d = @dir($dir) or dir("");
@@ -1204,6 +1227,8 @@ function writeTable_SummarizeAllTests() {
     $summAll = 0;
     $passAll = 0;
     foreach ($dirs as $testDir) {
+        $msg .= "$testDir  ".date("H:i:s")."<br/>";
+        
         # only interested in directories, but not . or ..
         if ( preg_match("/^\./", $testDir) or ! is_dir("$testDir")) {
             continue;
@@ -1255,6 +1280,7 @@ function writeTable_SummarizeAllTests() {
     $failAll = $summAll - $passAll;
     $table->addRow(array("Total", "", $summAll, $passAll." / ".$failAll,
                          sprintf("%.3f", 1.0 - $passAll/($summAll ? $summAll : 1))), $tdAttribs);
+    
     return $table->write();
     
 }
@@ -1282,6 +1308,7 @@ function loadCache() {
         } catch (PDOException $e) {
             return -1;
         }
+        $db = null;
         $alreadyLoaded = true;
     }
     
@@ -1722,6 +1749,7 @@ function writeTable_Logs() {
     $cmd = "select name from sqlite_sequence where name like 'log%'";
     $prep = $db->prepare($cmd);
     $prep->execute();
+    $db = null;
     $dbtables = $prep->fetchAll();
     
     # make links at the top of the page
@@ -1782,6 +1810,8 @@ function writeTable_EupsSetups() {
     $cmd = "select name from sqlite_sequence where name like 'eups%'";
     $prep = $db->prepare($cmd);
     $prep->execute();
+    $db = null;
+    
     $dbtables = $prep->fetchAll();
 
     # make links at the top of the page
@@ -1928,7 +1958,7 @@ function loadFailureCache() {
         } catch (PDOException $e) {
             return array(-1, -1);
         }
-        
+        $db = null;
         
         $alreadyLoaded = true;
     }
@@ -2143,14 +2173,21 @@ function writeTable_listTestResults() {
             $testDir = "test_${group}_$test";
 
             # if we didn't run this test for this group, move along ...
-            if (!array_key_exists($testDir, $summs)) {
+            if (!file_exists($testDir)) {
                 $totals[$i] += 0.0;
                 $filters[$i_f][$i] += 0.0;
                 $row[] = "";
                 $i += 1;
                 continue;
             }
-            $summ = $summs[$testDir];
+            
+            if ($summs == -1) {
+                $summ = summarizeTestByCounting($testDir);
+            } else {
+                $summ = $summs[$testDir];
+            }
+
+            
             $npass = $summ['npass'];
             $ntest = $summ['ntest'];
             $nfail = $ntest - $npass;
