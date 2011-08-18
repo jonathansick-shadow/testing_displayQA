@@ -470,19 +470,21 @@ class TestSet(object):
     
 
     def updateCounts(self, dataset=None, increment=[0,0]):
-        ntest, npass = increment
 
-        ntestOrig, npassOrig, datasetOrig, oldest, newest, extras = self._readCounts()
-
-        ntest = int(ntestOrig) + ntest
-        npass = int(npassOrig) + npass
-        if dataset is None:
-            dataset = datasetOrig
         if self.wwwCache:
+            ntest, npass = increment
+            ntestOrig, npassOrig, datasetOrig, oldest, newest, extras = self._readCounts()
+
+            ntest = int(ntestOrig) + ntest
+            npass = int(npassOrig) + npass
+            if dataset is None:
+                dataset = datasetOrig
+
             self._writeCounts(ntest, npass, dataset, oldest, newest, extras)
 
-        # return the new settings
-        return ntest, npass, dataset, oldest, newest, extras
+            # return the new settings
+            return ntest, npass, dataset, oldest, newest, extras
+
         
     def addTest(self, *args, **kwargs):
         """Add a test to this testing suite.

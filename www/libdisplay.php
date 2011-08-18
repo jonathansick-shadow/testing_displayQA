@@ -1407,7 +1407,7 @@ function writeTable_SummarizeAllGroups() {
     
     $specialGroups = array(
         ".*" => array(),
-        ".*1-.$" => array(),
+        ".*[12]-.$" => array(),
         ".*0-.$" => array(),
         ".*0-u$" => array(),
         ".*0-g$" => array(),
@@ -1415,16 +1415,16 @@ function writeTable_SummarizeAllGroups() {
         ".*0-i$" => array(),
         ".*0-z$" => array(),
         ".*0-y$" => array(),
-        ".*1-u$" => array(),
-        ".*1-g$" => array(),
-        ".*1-r$" => array(),
-        ".*1-i$" => array(),
-        ".*1-z$" => array(),
-        ".*1-y$" => array()
+        ".*[12]-u$" => array(),
+        ".*[12]-g$" => array(),
+        ".*[12]-r$" => array(),
+        ".*[12]-i$" => array(),
+        ".*[12]-z$" => array(),
+        ".*[12]-y$" => array()
         );
     $specialGroupLabels = array(
         ".*" => "all data",
-        ".*1-.$" => "all cloudless",
+        ".*[12]-.$" => "all cloudless",
         ".*0-.$" => "all cloud",
         ".*0-u$" => "u cloud",
         ".*0-g$" => "g cloud",
@@ -1432,12 +1432,12 @@ function writeTable_SummarizeAllGroups() {
         ".*0-i$" => "i cloud",
         ".*0-z$" => "z cloud",
         ".*0-y$" => "y cloud",
-        ".*1-u$" => "u cloudless",
-        ".*1-g$" => "g cloudless",
-        ".*1-r$" => "r cloudless",
-        ".*1-i$" => "i cloudless",
-        ".*1-z$" => "z cloudless",
-        ".*1-y$" => "y cloudless"
+        ".*[12]-u$" => "u cloudless",
+        ".*[12]-g$" => "g cloudless",
+        ".*[12]-r$" => "r cloudless",
+        ".*[12]-i$" => "i cloudless",
+        ".*[12]-z$" => "z cloudless",
+        ".*[12]-y$" => "y cloudless"
         );
     
     ## go through all directories
@@ -2101,8 +2101,8 @@ function writeTable_listTestResults() {
     sort($tests);
     
     $table = new Table();
-    $head = array("Group");
-    $attribs = array("align=\"left\"");
+    $head = array("No.", "Group");
+    $attribs = array("align=\"left\"", "align=\"left\"");
     foreach ($tests as $test) {
         #echo $test."<br/>";
         $subparts = preg_split("/\./", $test);
@@ -2116,30 +2116,40 @@ function writeTable_listTestResults() {
     $table->addHeader($head);
 
     $nt = count($head);
-    $filters = array_fill(0, 5, array_fill(0, $nt, 0.0));
-    $filters[0][0] = "g";
-    $filters[1][0] = "r";
-    $filters[2][0] = "i";
-    $filters[3][0] = "z";
-    $filters[4][0] = "y";
+    $filters = array_fill(0, 6, array_fill(0, $nt, 0.0));
+    $filters[0][0] = "u";
+    $filters[1][0] = "g";
+    $filters[2][0] = "r";
+    $filters[3][0] = "i";
+    $filters[4][0] = "z";
+    $filters[5][0] = "y";
 
-    $flookup = array("g"=>0, "r"=>1, "i"=>2, "z"=>3, "y"=>4);
-    $nfilters = array("g"=>0, "r"=>0, "i"=>0, "z"=>0, "y"=>0);
+    $flookup = array("u"=>0, "g"=>1, "r"=>2, "i"=>3, "z"=>4, "y"=>5);
+    $nfilters = array("u"=>0, "g"=>0, "r"=>0, "i"=>0, "z"=>0, "y"=>0);
     
     $totals = array_fill(0, count($head), 0.0);
-    $totals[0] = "mean:";
     $rows = array();
+    $iGroup = 1;
     foreach ($groups as $group=>$n) {
         if (strlen(trim($group)) == 0) { continue; }
 
         $f = substr($group, -1);
         $i_f = $flookup[$f];
         $glink = "<a href=\"group.php?group=$group\" title=\"$group\">".$group."</a>";
-        $row = array($glink);
-        $i = 1;
+        $row = array($iGroup, $glink);
+        $i = 2;
         foreach ($tests as $test) {
 
             $testDir = "test_${group}_$test";
+
+            # if we didn't run this test for this group, move along ...
+            if (!array_key_exists($testDir, $summs)) {
+                $totals[$i] += 0.0;
+                $filters[$i_f][$i] += 0.0;
+                $row[] = "";
+                $i += 1;
+                continue;
+            }
             $summ = $summs[$testDir];
             $npass = $summ['npass'];
             $ntest = $summ['ntest'];
@@ -2159,10 +2169,13 @@ function writeTable_listTestResults() {
         }
         $nfilters[$f] += 1;
         $rows[] = $row;
+        $iGroup += 1;
     }
-
+    $totals[0] = "n=".count($rows);
+    $totals[1] = "all data";
+    
     # grand totals
-    for($i=1; $i < count($totals); $i++) {
+    for($i=2; $i < count($totals); $i++) {
         $failrate = 100.0*$totals[$i]/count($rows);
         $totals[$i] = tfColor(sprintf("%.2f", $failrate), (abs($failrate) < 1.0e-6));
     }
@@ -2174,15 +2187,16 @@ function writeTable_listTestResults() {
     foreach($filters as $farr) {
         $f = $farr[0];
         $i_f = $flookup[$f];
-        for($i=1; $i < count($filters[$i_f]); $i++) {
+        $row = array("n=".$nfilters[$f], $f);
+        for($i=2; $i < count($filters[$i_f]); $i++) {
             if ($nfilters[$f] > 0) {
                 $failrate = 100.0*$filters[$i_f][$i]/$nfilters[$f];
-                $filters[$i_f][$i] = tfColor(sprintf("%.2f", $failrate), (abs($failrate)<1.0e-6));
+                $row[] = tfColor(sprintf("%.2f", $failrate), (abs($failrate)<1.0e-6));
             } else {
-                $filters[$i_f][$i] = "n/a";
+                $row[] = "n/a";
             }
         }
-        $table->addRow($filters[$i_f], $attribs);
+        $table->addRow($row, $attribs);
     }
     $table->addRow(array_fill(0, count($totals), "&nbsp;"));
 
