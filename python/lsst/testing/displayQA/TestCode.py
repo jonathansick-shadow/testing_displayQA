@@ -126,9 +126,10 @@ class TestSet(object):
 
 
         # connect to the db and create the tables
-        self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
-        self.conn = sqlite.connect(self.dbFile)
-        self.curs = self.conn.cursor()
+        self.connect()
+        #self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
+        #self.conn = sqlite.connect(self.dbFile)
+        #self.curs = self.conn.cursor()
         self.summTable, self.figTable, self.metaTable, self.eupsTable = \
                         "summary", "figure", "metadata", "eups"
         self.tables = {
@@ -146,6 +147,9 @@ class TestSet(object):
             self.curs.execute(cmd)
 
         self.conn.commit()
+        self.close()
+
+        
         self.tests = []
 
         # create the cache table
@@ -170,6 +174,17 @@ class TestSet(object):
                 curs = self.cacheConnect()
                 curs.execute(cmd)
                 self.cacheClose()
+
+
+    def connect(self):
+        self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
+        self.conn = sqlite.connect(self.dbFile)
+        self.curs = self.conn.cursor()
+        return self.curs
+
+    def close(self):
+        if not self.conn is None:
+            self.conn.close()
         
 
     def cacheConnect(self):
@@ -258,8 +273,10 @@ class TestSet(object):
 
     def _readCounts(self):
         sql = "select label,entrytime,value,lowerlimit,upperlimit from summary"
+        self.connect()
         self.curs.execute(sql)
         results = self.curs.fetchall()
+        self.close()
 
         # key: [regex, displaylabel, units, values]
         extras = {
@@ -305,8 +322,11 @@ class TestSet(object):
         
         # get the dataset from the metadata
         sql = "select key,value from metadata"
+        self.connect()
         self.curs.execute(sql)
         metaresults = self.curs.fetchall()
+        self.close()
+        
         dataset = "unknown"
         for m in metaresults:
             k, v = m
@@ -363,6 +383,10 @@ class TestSet(object):
         
         cmd = "delete from " + table + " " + where
 
+
+        if not cache:
+            self.connect()
+
         if not cache:
             self.curs.execute(cmd)
         else:
@@ -387,7 +411,9 @@ class TestSet(object):
             self.cacheCurs.execute(cmd, values)
             self.cacheConn.commit()
 
-
+        if not cache:
+            self.close()
+            
 
     def _pureInsert(self, table, replacements, selectKeys, cache=False):
         """Insert entries into a database table, overwrite if they already exist."""
@@ -423,9 +449,11 @@ class TestSet(object):
 
             # load the summary
             sql = "select label,entrytime,value,lowerlimit,upperlimit from summary"
+            self.connect()
             self.curs.execute(sql)
             results = self.curs.fetchall()
-
+            self.close()
+            
             # write failures
             failSet = []
             curs = self.cacheConnect()            
@@ -444,8 +472,10 @@ class TestSet(object):
             
             # load the figures
             sql = "select filename from figure"
+            self.connect()
             self.curs.execute(sql)
             figures = self.curs.fetchall()
+            self.close()
 
             # write allfigtable
             keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
@@ -641,8 +671,10 @@ class TestSet(object):
             keys = self.stdKeys + mykeys
 
             cmd = "create table if not exists " + table + " ("+",".join(keys)+")"
+            self.connect()
             self.curs.execute(cmd)
             self.conn.commit()
+            self.close()
 
             for setup in setups:
                 product, version = setup
