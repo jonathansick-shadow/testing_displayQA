@@ -12,6 +12,7 @@ $menu = new Menu();
 $page = new Page(getDefaultTitle(), getDefaultH1(), $menu);
 
 $page->appendcontent("<h2>Failure Rates in Percent</h2>\n");
+$page->appendContent(nGroupToggle());
 $page->appendContent(writeTable_listTestResults());
 $page->addSidebar(writeTable_timestamps());
 $page->addsidebar(writeTable_summarizeMetadata(array("dataset")));

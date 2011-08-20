@@ -101,7 +101,7 @@ function getTestLinksThisGroup($page) {
     $group = getGroup();
     $active = getActive();
     $allGroups = getGroupList();
-    $results = loadCache();
+    list($results, $nGrp) = loadCache();
     $currTest = getDefaultTest();
 
     # handle possible failure of the cache load
@@ -418,7 +418,7 @@ function getActive() {
 ####################################################
 function getGroupListFromCache() {
     
-    $results = loadCache();
+    list($results, $nGrp) = loadCache();
     if ($results == -1) {
         return -1;
     }
@@ -501,7 +501,7 @@ function getGroup() {
 ####################################################
 function getTimeStampsFromCache() {
 
-    $results = loadCache();
+    list($results, $nGrp) = loadCache();
     if ($results == -1) {
         return -1;
     }
@@ -1134,7 +1134,7 @@ function displayFigures($testDir) {
 
 function summarizeTestsFromCache() {
     
-    $results = loadCache();
+    list($results, $nGrp) = loadCache();
     if ($results == -1) {
         return -1;
     }
@@ -1287,37 +1287,120 @@ function writeTable_SummarizeAllTests() {
 
 
 function loadCache() {
-    
 
     static $alreadyLoaded = false;
-    static $results = array();
+    static $results2 = array();
+    static $nGroup = 0;
     
+    $results = array();
     if ($alreadyLoaded) {
-        return $results;
+        return array($results2, $nGroup);
     } else {
         if (!file_exists("db.sqlite3")) {
-            return -1;
+            return array(-1, -1);
         }
         $db = connect("."); #$testDir);
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         try {
-            $testCmd = "select * from counts;";
+            $testCmd = "select * from counts order by test;";
             $prep = $db->prepare($testCmd);
             $prep->execute();
             $results = $prep->fetchAll();
+            #$testCmd = "select * from counts order by test where test not like \"test__%\";";
+            #$prep = $db->prepare($testCmd);
+            #$prep->execute();
+            #$resultsB = $prep->fetchAll();
+            #$results = array_merge($resultsA, $resultsB);
         } catch (PDOException $e) {
-            return -1;
+            return array(-1, -1);
         }
         $db = null;
         $alreadyLoaded = true;
     }
+
+    $nInSet = getFloat('ninset', '100');
+    $iSet = getFloat('iset', '0');
+
+    $gstart = $iSet*$nInSet + 1;
+    $gend = ($iSet+1)*$nInSet + 1;
+
+    $resultsTmp = array();
+    foreach($results as $r) {
+        if (preg_match("/^test__/", $r['test'])) {
+            array_unshift($resultsTmp, $r);
+        } else {
+            $resultsTmp[] = $r;
+        }
+    }
     
-    return $results;
+    $results2 = array();
+    $groups = array();
+    foreach($resultsTmp as $r) {
+        $testDir = $r['test'];
+        $dataset = $r['dataset'];
+        if (!preg_match("/^test_.*/", $testDir)) {
+            continue;
+        }
+        $parts = preg_split("/_/", $testDir);
+        $group = $parts[1];
+        $groups[$group] = 1;
+        $nGroup = count($groups);
+        if ($nGroup >= $gstart and $nGroup < $gend) {
+            $results2[] = $r;
+        }
+        #if ($n >= $gend) { break;}
+    }    
+    
+    return array($results2, $nGroup);
 }
 
 
+function nGroupToggle() {
+
+    list($results, $nGrp) = loadCache();
+
+    # only offer this service if the cache is present
+    if ($results == -1) { return ""; }
+    
+    $iSet = getFloat('iset', '0');
+    $nInSet = getFloat('ninset', '100');
+    $nSet = intval($nGrp/$nInSet) + 1;
+
+    $out = "Total: $nGrp groups.<br/>";
+    $out .= "Display sets of: ";
+    foreach (array("50", "100", "200", "500") as $iInSet) {
+        if ($iInSet == $nInSet) {
+            $out .= "&nbsp; $iInSet &nbsp;";
+        } else {
+            $out .= "&nbsp; <a href=\"index.php?ninset=$iInSet&iset=0\">$iInSet</a> &nbsp;";
+        }
+    }
+    $out .= "<br/>\n";
+
+    $table = new Table();
+    $maxCols = 20;
+    $out .= "Show set: <br/>";
+    $row = array();
+    for ($i = 0; $i < $nSet; $i++) {
+
+        if ($i and $i % $maxCols == 0) {
+            $table->addRow($row);
+            $row = array();
+        }
+        
+        if ($i == $iSet) {
+            $row[] = "&nbsp; $i &nbsp;";
+        } else {
+            $row[] = "&nbsp; <a href=\"index.php?ninset=$nInSet&iset=$i\">$i</a> &nbsp;\n";
+        }
+    }
+    
+    $table->addRow($row);
+    return $out . $table->write();
+}
+
 function getDataSetsByGroup() {
-    $results = loadCache();
+    list($results, $nGrp) = loadCache();
     if ($results == -1) {
         return -1;
     }
@@ -1364,7 +1447,7 @@ function getAllTestDirs() {
 }
 function getAllTestDirsByGroupFromCache() {
 
-    $results = loadCache();
+    list($results, $nGrp) = loadCache();
     if ($results == -1) {
         return -1;
     }
@@ -1502,9 +1585,11 @@ function writeTable_SummarizeAllGroups() {
     
     $extras = array();
 
+    $iSet = getFloat('iset', '0');
+    $nInSet = getFloat('ninset', '100');
     $groupShowing = array();
     $rows = array();
-    $iGroup = 1;
+    $iGroup = $iSet*$nInSet + 1;
     foreach ($groups as $group=>$n) {
 
         #echo "group: ".$group."<br/>";
@@ -1866,7 +1951,7 @@ function getRegex($label, $default="") {
 
 
 function getFloat($label, $default="") {
-    $value = "";
+    $value = $default;
     if (array_key_exists($label, $_GET)) {
         $value = $_GET[$label];
         setcookie('displayQA_'.$label, $value);
