@@ -1,0 +1,9 @@
+
+# /
+/.sconsign.dblite
+/.sconf_temp
+/config.log
+
+# /www/
+/www/checkPipetteAllMappers
+/www/test_*
