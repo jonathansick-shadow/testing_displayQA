@@ -1,7 +1,20 @@
-setupRequired(afw >= 4.1.0.0)
-setupRequired(numpy)
-setupRequired(matplotlib)
-setupRequired(pysqlite)
-setupRequired(utils)
+if (type == exact) {
+   # Figure this out when needed; they all should be "setup -j"
+
+   setupRequired(afw 4.7.1.0+1 [>= 4.6.0.0])
+   setupRequired(utils 4.7.1.0+1 [>= 4.6.0.0]))
+   setupRequired(numpy >= 1.6.1+2)
+   setupRequired(matplotlib >= 1.0.1+2)
+   setupRequired(pysqlite >= 2.6.3+2)
+
+} else {
+   setupRequired(afw 4.7.1.0+1 [>= 4.6.0.0])
+   setupRequired(utils 4.7.1.0+1 [>= 4.6.0.0]))
+
+   setupRequired(numpy >= 1.6.1+2)
+   setupRequired(matplotlib >= 1.0.1+2)
+   setupRequired(pysqlite >= 2.6.3+2)
+}
+
 envAppend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envAppend(PATH, ${PRODUCT_DIR}/bin)
