@@ -840,6 +840,34 @@ function writeTable_summarizeMetadata($keys, $group=".*") {
 
 function getDescription() {
 
+    $testDir = getDefaultTest();
+    if (strlen($testDir) < 1) {
+	return "";
+    }
+    $active = getActive();
+    $db = connect($testDir);
+    $cmd = "select key, value from metadata";
+    $prep = $db->prepare($cmd);
+    $prep->execute();
+    $results = $prep->fetchAll();
+    $db = null;
+    
+    $description = "";
+    foreach ($results as $r) {
+        if (preg_match("/[dD]escription/", $r['key'])) {
+            $description = $r['value'];
+        }
+    }
+    
+    $link = "Description: <a href=\"#\" id=\"displayText\"></a><br/><br/>\n".
+        "<div id=\"toggleText\" style=\"display:none\">$description<br/></div>\n";
+    
+    return $link;
+
+}
+
+function getDescription2() {
+
     $show = getShowHide();
     
     $testDir = getDefaultTest();
