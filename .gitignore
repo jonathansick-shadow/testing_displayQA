@@ -1,4 +1,6 @@
 /python/lsst/testing/displayQA/version.py
+/python/lsst/testing/displayQA/*.pyc
+/python/lsst/testing/displayQA/figures/*.pyc
 /ups/testing_displayQA.cfgc
 
 # /
