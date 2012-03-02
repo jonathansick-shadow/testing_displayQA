@@ -240,11 +240,13 @@ class TestSet(object):
         data = {}
         if self.useCache:
             filename = os.path.join(self.wwwDir, label+".shelve")
-            if os.path.exists(filename):
+            try:
                 shelf = shelve.open(filename)
                 for k,v in shelf.items():
                     data[k] = v
                 shelf.close()
+            except:
+                pass
         return data
 
             
