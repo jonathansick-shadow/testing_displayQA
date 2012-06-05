@@ -2230,17 +2230,20 @@ function writeTable_listTestResults() {
     }
     $table->addHeader($head);
 
+    $showTotals = false;
+    
     $nt = count($head);
-    $filters = array_fill(0, 6, array_fill(0, $nt, 0.0));
+    $filters = array_fill(0, 7, array_fill(0, $nt, 0.0));
     $filters[0][0] = "u";
     $filters[1][0] = "g";
     $filters[2][0] = "r";
     $filters[3][0] = "i";
     $filters[4][0] = "z";
     $filters[5][0] = "y";
-
-    $flookup = array("u"=>0, "g"=>1, "r"=>2, "i"=>3, "z"=>4, "y"=>5);
-    $nfilters = array("u"=>0, "g"=>0, "r"=>0, "i"=>0, "z"=>0, "y"=>0);
+    $filters[6][0] = "x";
+    
+    $flookup = array("u"=>0, "g"=>1, "r"=>2, "i"=>3, "z"=>4, "y"=>5, "x"=>6);
+    $nfilters = array("u"=>0, "g"=>0, "r"=>0, "i"=>0, "z"=>0, "y"=>0, "x"=>0);
     
     $totals = array_fill(0, count($head), 0.0);
     $rows = array();
@@ -2249,6 +2252,9 @@ function writeTable_listTestResults() {
         if (strlen(trim($group)) == 0) { continue; }
 
         $f = substr($group, -1);
+        if (!preg_match("/^[ugrizy]$/", $f)) {
+            $f = 'x';
+        }
         $i_f = $flookup[$f];
         $glink = "<a href=\"group.php?group=$group\" title=\"$group\">".$group."</a>";
         $row = array($iGroup, $glink);
@@ -2308,6 +2314,9 @@ function writeTable_listTestResults() {
     # totals per filter
     foreach($filters as $farr) {
         $f = $farr[0];
+        if ($f == 'x') {
+            continue;
+        }
         $i_f = $flookup[$f];
         $row = array("n=".$nfilters[$f], $f);
         for($i=2; $i < count($filters[$i_f]); $i++) {
