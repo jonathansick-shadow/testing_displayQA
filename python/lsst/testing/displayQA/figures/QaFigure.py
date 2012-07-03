@@ -62,9 +62,9 @@ class QaFigure(object):
         else:
             mapList = self.getTransformedMap()
             
-        if len(mapList) > 0:
-            fp = open(path, 'w')
+        fp = open(path, 'w')
 
+        if len(mapList) > 0:
             # don't include overplotted map areas
             n = 100
             xpmax, ypmax = self.fig.transFigure.transform((1.0, 1.0))
@@ -80,7 +80,7 @@ class QaFigure(object):
                     fp.write("%s %d %d %d %d %s\n" % (label, x0, y0, x1, y1, info))
                     haveLookup[ix,iy] = 1
                     
-            fp.close()
+        fp.close()
 
 
     def getTransformedMap(self):
