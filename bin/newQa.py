@@ -93,7 +93,7 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue"):
                 
     # copy the www/ to the destination
     src = os.path.join(dqaDir, "www")
-    patterns = ["php", "ico", "js"]
+    patterns = ["php", "js"]
     files = []
     for p in patterns:
         files += glob.glob(os.path.join(src, "[a-zA-Z]*." + p))
@@ -106,24 +106,29 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue"):
         cmd = "cp -r %s %s" % (f, dest)
         os.system(cmd)
 
-    # handle the css file based on color chosen
+    # handle the css and favicon files based on color chosen
     style_base = "style_"+color+".css"
-    style_color = os.path.join(src, style_base)
-    style_dest  = os.path.join(dest, "style.css")
-    if os.path.exists(style_color):
-        print "installing: ", style_base
-        os.system("cp %s %s" % (style_color, style_dest))
-    else:
-        color_files = glob.glob(os.path.join(src, "style_*.css"))
-        colors = []
-        for f in color_files:
-            m = re.search("style_(.*).css", f)
-            if m:
-                colors.append(m.group(1))
-        msg = "Cannot install color '"+color+"'. "
-        msg += "Available colors: " + ", ".join(colors)
-        print msg
-        sys.exit()
+    favicon_base = "favicon_"+color+".png"
+    files = [
+        [style_base,   os.path.join(src, style_base),   os.path.join(dest, "style.css")],
+        [favicon_base, os.path.join(src, favicon_base), os.path.join(dest, "favicon.ico")],
+        ]
+        
+    for file_base, file_color, file_dest in files:
+        if os.path.exists(file_color):
+            print "installing: ", file_base
+            os.system("cp %s %s" % (file_color, file_dest))
+        else:
+            color_files = glob.glob(os.path.join(src, "style_*.css"))
+            colors = []
+            for f in color_files:
+                m = re.search("style_(.*).css", f)
+                if m:
+                    colors.append(m.group(1))
+            msg = "Cannot install color '"+color+"'. "
+            msg += "Available colors: " + ", ".join(colors)
+            print msg
+            sys.exit()
         
     print ""
     print "Created new QA site served from:"

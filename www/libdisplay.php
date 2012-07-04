@@ -275,7 +275,7 @@ function getToggleNames() {
     $testDir = getDefaultTest();
 
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     $active = getActive();
 
@@ -361,7 +361,7 @@ function haveMaps($testDir) {
     $haveMaps = false;
     $navmapFile = "";
     while(false !== ($f = $d->read())) {
-	#p($f,1);
+        ##p($f,1);
         if (preg_match("/\.navmap/", $f)) {$navmapFile =  "$testDir/$f";}
         if (preg_match("/\.(map|navmap)$/", $f)) { $haveMaps = true; }
     }
@@ -373,7 +373,7 @@ function getActive() {
 
     # if there are no tests yet, just default to .*
     if (strlen($testDir) < 1) {
-	return ".*";
+        return ".*";
     }
     
     # see if there are maps associated with this
@@ -386,7 +386,7 @@ function getActive() {
     if (strlen($navmapFile) > 0) {
         $lines = file($navmapFile);
         foreach ($lines as $line) {
-	    #p($line, 1);
+            ##p($line, 1);
             $arr = preg_split("/\s+/", $line);
             $validActive[] = $arr[0];
         }
@@ -595,7 +595,7 @@ function writeTable_ListOfTestResults() {
 
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     $active = getActive();
     
@@ -677,7 +677,7 @@ function writeTable_OneTestResult($label) {
 
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     
     if (empty($label)) {
@@ -732,7 +732,7 @@ function write_OneBacktrace($label) {
 
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     
     $out = "<h2>Backtrace</h2><br/>\n";
@@ -842,7 +842,7 @@ function getDescription() {
 
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     $active = getActive();
     $db = connect($testDir);
@@ -872,7 +872,7 @@ function getDescription2() {
     
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     $active = getActive();
     $db = connect($testDir);
@@ -905,7 +905,7 @@ function getToggleLinks() {
     $show = getShowHide();
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     $active = getActive();
     
@@ -935,7 +935,7 @@ function writeTable_metadata() {
 
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     $active = getActive();
         
@@ -972,7 +972,7 @@ function writeMappedFigures($suffix="map") {
     $testDir = getDefaultTest();
 
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     $active = getActive();
 
@@ -1085,7 +1085,7 @@ function writeFigures() {
 
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     
     $active = getActive();
@@ -1770,12 +1770,12 @@ function writeTable_SummarizeAllGroups() {
         foreach ($extraKeys as $k) {
             if (array_key_exists($i, $arr)) {
                 $values = $arr[$i];
-		$mean = array_sum($values)/$nMatch;
-		$stdev = stdev($values);
+                $mean = array_sum($values)/$nMatch;
+                $stdev = stdev($values);
                 if (preg_match("/^n/", $k)) {
                     $entry = sprintf("<div title=\"&plusmn;%d\">%d</div>", $stdev, $mean);
                 } else {
-		    $fmt = ($mean > 0.1) ? "%.2f" : "%.3f";
+                    $fmt = ($mean > 0.1) ? "%.2f" : "%.3f";
                     $entry = sprintf("<div title=\"&plusmn;$fmt\">$fmt</div>", $stdev, $mean);
                 }                    
                     
@@ -1825,7 +1825,7 @@ function writeTable_SummarizeAllGroups() {
                 if (preg_match("/^n/", $k)) {
                     $row[] = sprintf("<div title=\"&plusmn;%d %s\">%d</div>", $e, $u, $v);
                 } else {
-		    $fmt = (floatval($v) < 0.1) ? "%.3f" : "%.2f";
+                    $fmt = (floatval($v) < 0.1) ? "%.3f" : "%.2f";
                     $row[] = sprintf("<div title=\"&plusmn;$fmt %s\">$fmt</div>", $e, $u, $v);
                 }
             } else {
@@ -1853,7 +1853,7 @@ function writeTable_Logs() {
 
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     
     $db = connect($testDir);
@@ -1915,7 +1915,7 @@ function writeTable_EupsSetups() {
 
     $testDir = getDefaultTest();
     if (strlen($testDir) < 1) {
-	return "";
+        return "";
     }
     $db = connect($testDir);
 
