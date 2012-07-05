@@ -33,15 +33,15 @@ class Test(object):
         @param value      Value to be tested
         @param limits     A list [min, max] specifying range of acceptable values (inclusive).
         @param comment    A comment with extra info about the test
-	@param areaLabel  [optional] Label associating this test with a mapped area in a figure.
+        @param areaLabel  [optional] Label associating this test with a mapped area in a figure.
         """
-	
+        
         self.label = label
         if not areaLabel is None:
             self.label += " -*- "+areaLabel
 
         self.limits = limits
-        if numpy.isnan(value):
+        if value is None or numpy.isnan(value):
             self.value = BAD_VALUE
             if self.evaluate() != False:
                 # -99 is actually within the window of good values; keep as NaN for now
