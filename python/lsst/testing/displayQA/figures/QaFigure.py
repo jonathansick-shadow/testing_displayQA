@@ -18,6 +18,8 @@ from matplotlib import colors
 
 class QaFigure(object):
     """A wrapper for a matplotlib figure, and a Baseclass for more complicated QA figures. """
+
+    count = 0
     
     def __init__(self, size=(4.0, 4.0), dpi=100): # (512, 512), DPI=100):
         """
@@ -33,6 +35,7 @@ class QaFigure(object):
         self.mapAreas    = []
         self.mapTransformed = True
 
+        QaFigure.count += 1
         
     def reset(self):
         self.fig.clf()
