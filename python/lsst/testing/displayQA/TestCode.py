@@ -120,6 +120,7 @@ class TestSet(object):
         if not os.path.exists(self.wwwDir):
             try:
                 os.mkdir(self.wwwDir)
+                os.chmod(self.wwwDir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
             except os.error, e:  # as exc: # Python >2.5
                 if e.errno != errno.EEXIST:
                     raise
@@ -228,8 +229,10 @@ class TestSet(object):
         return data
 
 
-    def shelve(self, label, dataDict):
-        if self.useCache:
+    def shelve(self, label, dataDict, useCache=None):
+        if useCache is None:
+            useCache = self.useCache
+        if useCache:
             filename = os.path.join(self.wwwDir, label+".shelve")
             shelf = shelve.open(filename)
             for k,v in dataDict.items():
@@ -596,7 +599,69 @@ class TestSet(object):
             replacements = dict( zip(tablekeys, [key, 0, 1, 1, "Uncaught exception", exceptDict[key]]) )
             self._insertOrUpdate(self.summTable, replacements, ['label'])
 
+            
+    def _writeWrapperScript(self, pymodule, figname, plotargs, pythonpath=""):
+        pyscript = re.sub(".pyc$", ".py", pymodule.__file__)
         
+        s = ""
+        fig_path = os.path.join(self.wwwDir, figname)
+        sh_wrapper = fig_path + ".sh"
+
+        if plotargs is None:
+           plotargs = "" 
+        
+        fp = open(sh_wrapper, 'w')
+        #s = "#!/usr/bin/env bash\n" + \
+        #    "export PATH=%s\n" % (os.getenv('PATH')) + \
+        #    "export PYTHONPATH=%s\n" % (os.getenv('PYTHONPATH')) + \
+        #    pyscript + " " + fig_path + "\n"
+        s = "#!/usr/bin/env bash\n" + \
+            "export MPLCONFIGDIR=%s\n" % (os.path.join(os.getenv('WWW_ROOT'), ".matplotlib")) + \
+            "export PYTHONPATH=$PYTHONPATH:"+pythonpath + "\n" + \
+            pyscript + " " + fig_path + " " + plotargs + "\n"
+        fp.write(s)
+        fp.close()
+        os.chmod(sh_wrapper, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+        
+    def addLazyFigure(self, dataDict, filename, caption, pymodule, plotargs=None, toggle=None, areaLabel=None, pythonpath=""):
+        """Add a figure to this test suite.
+        """
+
+
+        if not toggle is None:
+            filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
+        if not areaLabel is None:
+            filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
+        
+        path = os.path.join(self.wwwDir, filename)
+
+        # shelve the data
+        self.shelve(filename, dataDict, useCache=True)
+
+        # create an empty file
+        fp = open(path, 'w')
+        fp.close()
+        os.chmod(path,
+                 stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+                 
+        
+        # write the script to generate the real figure
+        self._writeWrapperScript(pymodule, filename, plotargs, pythonpath)
+
+        
+        keys = [x.split()[0] for x in self.tables[self.figTable]]
+        replacements = dict( zip(keys, [filename, caption]))
+        self._insertOrUpdate(self.figTable, replacements, ['filename'])
+
+        if self.wwwCache:
+            curs = self.cacheConnect()
+            keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
+            replacements = dict( zip(keys, [path, caption]))
+            self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
+            self.cacheClose()
+        
+
+            
     def addFigure(self, fig, basename, caption, areaLabel=None, toggle=None, navMap=False):
         """Add a figure to this test suite.
         

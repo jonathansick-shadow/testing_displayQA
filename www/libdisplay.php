@@ -13,6 +13,11 @@ function p($val,$ret=0) {
     if ($ret > 0) {$i = 0;}
 }
 
+if (true) {
+    ini_set('display_errors', 'On');
+    error_reporting(E_ALL);
+}
+
 
 ######################################
 # true/false color
@@ -80,6 +85,19 @@ function getDefaultH1() {
     return "Q.A. Test Summary &nbsp;&nbsp; <a href=\"../\"><font size=\"3\">Go to main rerun list.</font></a>";
 }
 
+function writeImgTag($dir, $filename, $details) {
+    $path = "$dir/$filename";
+    $foo = "loaded";
+    if (! file_exists($path) || filesize($path) < 10) {
+        system($path.".sh 2>&1", $output);
+        #echo $output."<br/>";
+        #echo $path."<br/>";
+        #system("echo 'hello' > $path");
+        $foo = "generated";
+    }
+    $s = "<img src=\"$path\" $details> <b>$foo </b>";
+    return $s;
+}
 
 function stdev($aValues, $bSample = false) {
     if (count($aValues) < 2) {
@@ -282,7 +300,7 @@ function getToggleNames() {
     $d = @dir("$testDir");
     $toggles = array();
     while( false !== ($f = $d->read())) {
-        if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
+        if (! preg_match("/.(png|PNG|jpg|JPG)$/", $f)) { continue; }
         if (! preg_match("/$active/", $f)) { continue; }
         $tog = preg_replace("/^.*\.([^-.]+)[\.-].*$/", "$1", $f);
         if ($tog != $f) {
@@ -1093,7 +1111,7 @@ function writeFigures() {
 
     $figures = array();
     while( false !== ($f = $d->read())) {
-        if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
+        if (! preg_match("/.(png|PNG|jpg|JPG)$/", $f)) { continue; }
         if (! preg_match("/$active/", $f)) { continue; }
         $figures[] = $f;
     }
@@ -1125,7 +1143,7 @@ function writeFigures() {
         $path = "$testDir/$f";
 
         # skip mapped files (they're obtained with writeMappedFigures() )
-        $base = preg_replace("/.(png|PNG|jpg|JPG)/", "", $path);
+        $base = preg_replace("/.(png|PNG|jpg|JPG)$/", "", $path);
         $map = $base . ".map";
         $navmap = $base . ".navmap";
         if (file_exists($map) or file_exists($navmap)) {
@@ -1135,12 +1153,13 @@ function writeFigures() {
         $mtime = date("Y-m_d H:i:s", filemtime($path));
 
         # tiff must be handled specially
-         
+
         if (preg_match("/.tiff$/", $path)) {
             # this doesn't work.  tiffs disabled for now.
             $imgTag = "<object data=\"$path\" type=\"image/tiff\"><param name=\"negative\" value=\"yes\"></object>";
         } else {
-            $imgTag = "<img src=\"$path\">";
+            $details = "";
+            $imgTag = writeImgTag($testDir, $f, $details); #"<img src=\"$path\">";
         }
         
         $img = new Table();
