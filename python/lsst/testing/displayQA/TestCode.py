@@ -611,23 +611,37 @@ class TestSet(object):
            plotargs = "" 
         
         fp = open(sh_wrapper, 'w')
-        #s = "#!/usr/bin/env bash\n" + \
-        #    "export PATH=%s\n" % (os.getenv('PATH')) + \
-        #    "export PYTHONPATH=%s\n" % (os.getenv('PYTHONPATH')) + \
-        #    pyscript + " " + fig_path + "\n"
         s = "#!/usr/bin/env bash\n" + \
             "export MPLCONFIGDIR=%s\n" % (os.path.join(os.getenv('WWW_ROOT'), ".matplotlib")) + \
+            "export PATH=%s\n" % (os.getenv('PATH')) + \
+            "export PYTHONPATH=%s\n" % (os.getenv('PYTHONPATH')) + \
+            "export LD_LIBRARY_PATH=%s\n" % (os.getenv('LD_LIBRARY_PATH')) + \
             "export PYTHONPATH=$PYTHONPATH:"+pythonpath + "\n" + \
             pyscript + " " + fig_path + " " + plotargs + "\n"
         fp.write(s)
         fp.close()
         os.chmod(sh_wrapper, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+
+
         
-    def addLazyFigure(self, dataDict, filename, caption, pymodule, plotargs=None, toggle=None, areaLabel=None, pythonpath=""):
+    def cacheLazyData(self, dataDict, filename, toggle=None, areaLabel=None):
+        """ """
+
+        if not toggle is None:
+            filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
+        if not areaLabel is None:
+            filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
+        
+        self.shelve(filename, dataDict, useCache=True)
+
+        
+            
+    def addLazyFigure(self, dataDict, filename, caption, pymodule,
+                      plotargs=None, toggle=None, areaLabel=None, pythonpath=""):
         """Add a figure to this test suite.
         """
 
-
+        
         if not toggle is None:
             filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
         if not areaLabel is None:
@@ -636,7 +650,8 @@ class TestSet(object):
         path = os.path.join(self.wwwDir, filename)
 
         # shelve the data
-        self.shelve(filename, dataDict, useCache=True)
+        if areaLabel != 'all':
+            self.shelve(filename, dataDict, useCache=True)
 
         # create an empty file
         fp = open(path, 'w')
