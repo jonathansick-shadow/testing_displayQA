@@ -2,6 +2,7 @@ import sys
 import traceback
 import os
 import re
+import glob
 import inspect
 import stat
 import shutil
@@ -624,35 +625,56 @@ class TestSet(object):
 
 
         
-    def cacheLazyData(self, dataDict, filename, toggle=None, areaLabel=None):
+    def cacheLazyData(self, dataDict, filename, toggle=None, areaLabel=None,
+                      masterToggle=None):
         """ """
 
+        cacheName = filename
         if not toggle is None:
             filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
+            if masterToggle  and  toggle != masterToggle:
+                cacheName = re.sub("(\.\w{3})$", r"."+masterToggle+r"\1", cacheName)
         if not areaLabel is None:
             filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
-        
-        self.shelve(filename, dataDict, useCache=True)
+            cacheName = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", cacheName)
 
+        if masterToggle is None  or  toggle == masterToggle:
+            self.shelve(filename, dataDict, useCache=True)
+        else:
+            for f in glob.glob(cachePath+".shelve.*"):
+                shelfLink = re.sub(masterToggle, toggle, f)
+                os.symlink(f, shelfLink)
         
-            
+
+                
     def addLazyFigure(self, dataDict, filename, caption, pymodule,
-                      plotargs=None, toggle=None, areaLabel=None, pythonpath=""):
+                      plotargs=None, toggle=None, areaLabel=None, pythonpath="", masterToggle=None):
         """Add a figure to this test suite.
         """
 
         
+        cacheName = filename
         if not toggle is None:
             filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
+            if masterToggle  and  toggle != masterToggle:
+                cacheName = re.sub("(\.\w{3})$", r"."+masterToggle+r"\1", cacheName)
         if not areaLabel is None:
             filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
-        
+            cacheName = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", cacheName)
+            
         path = os.path.join(self.wwwDir, filename)
-
+        cachePath = os.path.join(self.wwwDir, cacheName)
+        
         # shelve the data
         if areaLabel != 'all':
-            self.shelve(filename, dataDict, useCache=True)
-
+            # if there's no masterToggle, or if this toggle is the master ... cache
+            if masterToggle is None  or  toggle == masterToggle:
+                self.shelve(filename, dataDict, useCache=True)
+            else:
+                for f in glob.glob(cachePath+".shelve.*"):
+                    shelfLink = re.sub(masterToggle, toggle, f)
+                    os.symlink(f, shelfLink)
+        
         # create an empty file
         fp = open(path, 'w')
         fp.close()
