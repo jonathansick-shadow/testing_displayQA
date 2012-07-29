@@ -638,12 +638,16 @@ class TestSet(object):
             filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
             cacheName = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", cacheName)
 
+        path = os.path.join(self.wwwDir, filename)
+        cachePath = os.path.join(self.wwwDir, cacheName)
+            
         if masterToggle is None  or  toggle == masterToggle:
             self.shelve(filename, dataDict, useCache=True)
         else:
             for f in glob.glob(cachePath+".shelve.*"):
                 shelfLink = re.sub(masterToggle, toggle, f)
-                os.symlink(f, shelfLink)
+                if not os.path.exists(shelfLink):
+                    os.symlink(f, shelfLink)
         
 
                 
@@ -673,7 +677,8 @@ class TestSet(object):
             else:
                 for f in glob.glob(cachePath+".shelve.*"):
                     shelfLink = re.sub(masterToggle, toggle, f)
-                    os.symlink(f, shelfLink)
+                    if not os.path.exists(shelfLink):
+                        os.symlink(f, shelfLink)
         
         # create an empty file
         fp = open(path, 'w')
