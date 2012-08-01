@@ -87,17 +87,11 @@ function getDefaultH1() {
 
 function writeImgTag($dir, $filename, $details) {
     $path = "$dir/$filename";
-    $foo = "loaded";
-    if (! file_exists($path) || filesize($path) < 10) {
-        system($path.".sh 2>&1", $output);
-        #echo $output."<br/>";
-        #echo $path."<br/>";
-        #system("echo 'hello' > $path");
-        $foo = "generated";
-    }
-    $s = "<img src=\"$path\" $details> <b>$foo </b>";
+    $foo = (! file_exists($path) || filesize($path) < 10) ? "generting" : "loaded";
+    $s = "<img src=\"imageGenerate.php?imgen_path=$path\" $details><b>$foo</b>";
     return $s;
 }
+
 
 function stdev($aValues, $bSample = false) {
     if (count($aValues) < 2) {
