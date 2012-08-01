@@ -88,8 +88,8 @@ function getDefaultH1() {
 
 function writeImgTag($dir, $filename, $details) {
     $path = "$dir/$filename";
-    $foo = (! file_exists($path) || filesize($path) < 10) ? "generting" : "loaded";
-    $s = "<img src=\"imageGenerate.php?imgen_path=$path\" $details><b>$foo</b>";
+    #$debug = (! file_exists($path) || filesize($path) < 10) ? "generating" : "loaded";
+    $s = "<img src=\"imageGenerate.php?imgen_path=$path\" $details>"; #"<b>$debug</b>";
     return $s;
 }
 
