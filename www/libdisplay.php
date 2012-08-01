@@ -13,7 +13,8 @@ function p($val,$ret=0) {
     if ($ret > 0) {$i = 0;}
 }
 
-if (true) {
+include_once("config.php");
+if ($display_errors) {
     ini_set('display_errors', 'On');
     error_reporting(E_ALL);
 }
