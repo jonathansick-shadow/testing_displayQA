@@ -612,15 +612,23 @@ class TestSet(object):
         
         if plotargs is None:
            plotargs = "" 
-        
+
+        enviro_path = os.path.join(self.wwwBase, "environment.php")
+        if not os.path.exists(enviro_path):
+            fp = open(enviro_path, 'w')
+            s  = "<?php\n"
+            s += "$qa_environment = array(\n"
+            s += "   'MPLCONFIGDIR' => '%s',\n" % (os.path.join(os.getenv('WWW_ROOT'), ".matplotlib"))
+            s += "   'PATH' => '%s',\n" % (os.getenv('PATH'))
+            s += "   'PYTHONPATH' => '%s',\n" % (os.getenv('PYTHONPATH'))
+            s += "   'LD_LIBRARY_PATH' => '%s'\n" % (os.getenv('LD_LIBRARY_PATH'))
+            s += "   );\n"
+            fp.write(s)
+            fp.close()
+            
         fp = open(sh_wrapper, 'w')
-        s = "#!/usr/bin/env bash\n" + \
-            "export MPLCONFIGDIR=%s\n" % (os.path.join(os.getenv('WWW_ROOT'), ".matplotlib")) + \
-            "export PATH=%s\n" % (os.getenv('PATH')) + \
-            "export PYTHONPATH=%s\n" % (os.getenv('PYTHONPATH')) + \
-            "export LD_LIBRARY_PATH=%s\n" % (os.getenv('LD_LIBRARY_PATH')) + \
-            "export PYTHONPATH=$PYTHONPATH:"+pythonpath + "\n" + \
-            pyscript + " " + fig_path + " " + plotargs + "\n"
+        s = "#!/usr/bin/env bash\n"
+        s += pyscript + " " + fig_path + " " + plotargs + "\n"
         fp.write(s)
         fp.close()
         os.chmod(sh_wrapper, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)

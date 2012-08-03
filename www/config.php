@@ -1,4 +1,4 @@
 <?php
-$display_errors = false;
+$display_errors = true;
 
 
