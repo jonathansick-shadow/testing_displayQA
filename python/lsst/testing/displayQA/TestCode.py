@@ -608,6 +608,8 @@ class TestSet(object):
         fig_path = os.path.join(self.wwwDir, figname)
         sh_wrapper = fig_path + ".sh"
 
+        fig_path = os.path.join(self.testDir, figname)
+        
         if plotargs is None:
            plotargs = "" 
         
