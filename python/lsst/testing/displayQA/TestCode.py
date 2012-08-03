@@ -603,6 +603,8 @@ class TestSet(object):
             
     def _writeWrapperScript(self, pymodule, figname, plotargs, pythonpath=""):
         pyscript = re.sub(".pyc$", ".py", pymodule.__file__)
+        pypath, pyfile = os.path.split(pyscript)
+        
         
         s = ""
         fig_path = os.path.join(self.wwwDir, figname)
@@ -619,7 +621,7 @@ class TestSet(object):
             s  = "<?php\n"
             s += "$qa_environment = array(\n"
             s += "   'MPLCONFIGDIR' => '%s',\n" % (os.path.join(os.getenv('WWW_ROOT'), ".matplotlib"))
-            s += "   'PATH' => '%s',\n" % (os.getenv('PATH'))
+            s += "   'PATH' => '%s:%s',\n" % (os.getenv('PATH'), pypath)
             s += "   'PYTHONPATH' => '%s',\n" % (os.getenv('PYTHONPATH'))
             s += "   'LD_LIBRARY_PATH' => '%s'\n" % (os.getenv('LD_LIBRARY_PATH'))
             s += "   );\n"
@@ -628,7 +630,7 @@ class TestSet(object):
             
         fp = open(sh_wrapper, 'w')
         s = "#!/usr/bin/env bash\n"
-        s += pyscript + " " + fig_path + " " + plotargs + "\n"
+        s += pyfile + " " + fig_path + " " + plotargs + "\n"
         fp.write(s)
         fp.close()
         os.chmod(sh_wrapper, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
