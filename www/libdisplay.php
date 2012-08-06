@@ -960,14 +960,24 @@ function writeTable_metadata() {
     $prep->execute();
     $results = $prep->fetchAll();
     $db = null;
-    
+
+    $sql = "";
     foreach ($results as $r) {
         if (preg_match("/[dD]escription/", $r['key'])) {
             continue;
-        } 
+        }
+        if (preg_match("/[sS][qQ][Ll]/", $r['key'])) {
+            $sql .= wordwrap("<b>".$r['key']."</b><br/>".$r['value'], 40, "<br/>\n")."<br/><br/>\n";
+            continue;
+        }        
         $meta->addRow(array($r['key'].":", $r['value']));
     }
     $meta->addRow(array("Active:", $active));
+    if (strlen($sql) > 10) {
+        $sqllink = "<a href=\"#\" id=\"displaySql\"></a>\n".
+            "<div id=\"toggleSql\" style=\"display:none\">".$sql."</div>\n";
+        $meta->addRow(array("SQL:", $sqllink));
+    }
     return $meta->write();
 }
 
