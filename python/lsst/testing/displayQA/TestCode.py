@@ -392,7 +392,7 @@ class TestSet(object):
         # we want to overwrite entries if they exist, or insert them if they don't
         
         # delete the rows which match the selectKeys
-        if False:
+        if True:
             where = []
             for key in selectKeys:
                 if isinstance(replacements[key], str):
@@ -435,9 +435,9 @@ class TestSet(object):
             qmark = " ("+ ",".join("?"*len(values)) + ")"
             cmd = "replace into "+table+inlist + " values " + qmark
             
-        print cmd, values
-        if not cache:
-            self.connect()
+            #print cmd, values
+            if not cache:
+                self.connect()
         if not cache:
             self.curs.execute(cmd, values)
             if not useApsw:
