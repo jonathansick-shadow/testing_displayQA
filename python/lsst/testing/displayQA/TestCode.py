@@ -19,6 +19,22 @@ BAD_VALUE = -99
 
 useApsw = False
 
+
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+
+
 class TestFailError(Exception):
     def __init__(self, message):
         self.message = message
@@ -702,6 +718,12 @@ class TestSet(object):
 
         #os.symlink(basename, path)
         shutil.copyfile(basename, path)
+
+        convert = which("convert")
+        size = "200x200"
+        if convert:
+            os.system(convert + " " + path + " -resize "+size+" " + re.sub(".png$", "Thumb.png", path))
+            
         
         keys = [x.split()[0] for x in self.tables[self.figTable]]
         replacements = dict( zip(keys, [filename, caption]))

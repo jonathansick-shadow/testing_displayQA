@@ -1085,40 +1085,94 @@ function writeMappedFigures($suffix="map") {
 
 function writeFigureArray($images_in) {
 
+    # identify the positions of the sensors according to the camera
+    $cams = array(
+        'suprimecam' =>
+        array("Chihiro", "Clarisse", "Fio",     "Kiki",   "Nausicaa",
+              "Ponyo",   "San",      "Satsuki", "Sheeta", "Sophie"),
+        'hsc' =>
+        array(
+            "dummy",  "dummy", "dummy","hsc101","hsc082","hsc080","hsc078","hsc076","hsc074","hsc072","hsc070","hsc100","dummy",  "dummy", "dummy",
+            "dummy", "hsc068","hsc066","hsc064","hsc062","hsc060","hsc058","hsc056","hsc054","hsc052","hsc050","hsc048","hsc097","hsc099", "dummy",
+            "hsc046","hsc044","hsc042","hsc040","hsc038","hsc036","hsc034","hsc032","hsc030","hsc028","hsc026","hsc024","hsc091","hsc093","hsc095",
+            "hsc022","hsc020","hsc018","hsc016","hsc014","hsc012","hsc010","hsc008","hsc006","hsc004","hsc002","hsc000","hsc085","hsc087","hsc089",
+            "hsc088","hsc086","hsc084","hsc001","hsc003","hsc005","hsc007","hsc009","hsc011","hsc013","hsc015","hsc017","hsc019","hsc021","hsc023",
+            "hsc094","hsc092","hsc090","hsc025","hsc027","hsc029","hsc031","hsc033","hsc035","hsc037","hsc039","hsc041","hsc043","hsc045","hsc047",
+            "dummy", "hsc098","hsc096","hsc049","hsc051","hsc053","hsc055","hsc057","hsc059","hsc061","hsc063","hsc065","hsc067","hsc069", "dummy",
+            "dummy",  "dummy", "dummy","hsc102","hsc071","hsc073","hsc075","hsc077","hsc079","hsc081","hsc083","hsc103","dummy",  "dummy", "dummy")
+        );
+
+    $widths   = array('suprimecam' => 5, 'hsc' => 15);
+    $heights  = array('suprimecam' => 2, 'hsc' => 8);
+    $camCount = array('suprimecam' => 0, 'hsc' => 0);
+
+
+    
+    # use the figure names to decide which camera we have
+    # brute force, but no need for elegance with ~100 elements in the array
     $images = array();
     foreach ($images_in as $im) {
         $nav = preg_replace("/png$/", "navmap", $im);
         if (! file_exists($nav)) {
             $images[] = $im;
+            foreach ($cams as $cam=>$arr) {
+                $regx = join("|", $arr);
+                if (preg_match("(/".$regx."/)", $im)) {
+                    $camCount[$cam] += 1;
+                }
+            }
         }
     }
-    
-    $cams = array(
-        10 => 'suprimecam'
-        );
-    $widths  = array('suprimecam' => 5);
-    $heights = array('suprimecam' => 2);
-    $orders   = array('suprimecam' => array(6, 7, 2, 1, 0, 8, 9, 5, 4, 3));
-    
-    $N = count($images);
-    $w = intval(sqrt($N)) + 1;
-    $h = intval(sqrt($N));
-    $order = range(0, $N);
-    foreach ($cams as $n => $cam) {
-        if ($N % $n == 0) {
-            $w = $widths[$cam];
-            $h = $heights[$cam];
-            $order = $orders[$cam];
+    # the camera whose detector names matched the most figures wins.
+    $cam = "";
+    $camMax = 0;
+    foreach ($camCount as $cam_tmp => $n) {
+        if ($n > $camMax) {
+            $camMax = $n;
+            $cam = $cam_tmp;
         }
     }
+        
+
+    # now we know the camera, so look up where the sensor goes.
+    $images_new = array();
+    $camLookup = array_flip($cams[$cam]);
+    foreach ($images as $im) {
+        $pos = 0;
+        foreach ($camLookup as $name => $loc) {
+            if (preg_match("/$name/", $im)) {
+                $images_new[$loc] = $im;
+            }
+        }
+    }
+    ksort($images_new);
     
+
+    # if no cameras matched, use sqrt(n) for the width and height.
+    $nim = count($images);
+    if (strlen($cam) == 0) {
+        $w = intval(sqrt($nim)) + 1;
+        $h = intval(sqrt($nim));
+
+    # otherwise use the correct size of the array
+    } else {
+        $w = $widths[$cam];
+        $h = $heights[$cam];
+    }
+
+    # go through all the devices we expect to find in this camera.
+    # if we have the device, display it.
+    $N = $w*$h;
     $mod = ($w) ? $w : 1;
     $max_width = 650;
     $im_width = $max_width/$mod;
     $tab = new Table();
     $imarray = array();
     for ($i=0; $i< $N; $i++) {
-        $im = $images[$order[$i]];
+        $im = "";
+        if (array_key_exists($i, $images_new) ) {
+            $im = preg_replace("/.png$/", "Thumb.png", $images_new[$i]);
+        }
         $imarray[] = "<img src='$im' width='$im_width'>\n";
         if ($i%$mod == $mod-1) {
             $tab->addRow($imarray);
@@ -1147,6 +1201,7 @@ function writeFigures() {
     while( false !== ($f = $d->read())) {
         if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
         if (! preg_match("/$active/", $f)) { continue; }
+        if (preg_match("/Thumb.png/", $f)) { continue; }
         $figures[] = $f;
     }
     asort($figures);
