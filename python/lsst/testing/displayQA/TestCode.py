@@ -6,7 +6,8 @@ import inspect
 import stat
 import shutil
 import eups
-import sqlite
+import sqlite3 as sqlite
+#import apsw
 import errno
 import cPickle as pickle
 import shelve
@@ -15,6 +16,8 @@ import LogConverter as logConv
 
 import numpy
 BAD_VALUE = -99
+
+useApsw = False
 
 class TestFailError(Exception):
     def __init__(self, message):
@@ -140,7 +143,7 @@ class TestSet(object):
             self.metaTable : ["key text", "value text"],
             }
 
-        self.stdKeys = ["id integer primary key autoincrement", "entrytime timestamp"]
+        self.stdKeys = ["id integer primary key autoincrement", "entrytime timestamp DEFAULT (strftime('%s','now'))"]
         for k, v in self.tables.items():
             keys = self.stdKeys + v
             cmd = "create table if not exists " + k + " ("+",".join(keys)+")"
@@ -178,7 +181,10 @@ class TestSet(object):
 
     def connect(self):
         self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
-        self.conn = sqlite.connect(self.dbFile)
+        if useApsw:
+            self.conn = apsw.Connetion(self.dbFile)
+        else:
+            self.conn = sqlite.connect(self.dbFile)
         self.curs = self.conn.cursor()
         return self.curs
 
@@ -189,7 +195,10 @@ class TestSet(object):
 
     def cacheConnect(self):
         self.cacheDbFile = os.path.join(self.wwwBase, "db.sqlite3")
-        self.cacheConn = sqlite.connect(self.cacheDbFile)
+        if useApsw:
+            self.cacheConn = apsw.Connection(self.cacheDbFile)
+        else: 
+            self.cacheConn = sqlite.connect(self.cacheDbFile)
         self.cacheCurs = self.cacheConn.cursor()
         return self.cacheCurs
 
@@ -276,8 +285,12 @@ class TestSet(object):
     def _readCounts(self):
         sql = "select label,entrytime,value,lowerlimit,upperlimit from summary"
         self.connect()
-        self.curs.execute(sql)
-        results = self.curs.fetchall()
+
+        if useApsw:
+            results = self.curs.execute(sql)
+        else:
+            self.curs.execute(sql)
+            results = self.curs.fetchall()
         self.close()
 
         # key: [regex, displaylabel, units, values]
@@ -325,8 +338,12 @@ class TestSet(object):
         # get the dataset from the metadata
         sql = "select key,value from metadata"
         self.connect()
-        self.curs.execute(sql)
-        metaresults = self.curs.fetchall()
+        if useApsw:
+            metaresults = self.curs.execute(sql)
+        else:
+            self.curs.execute(sql)
+            metaresults = self.curs.fetchall()
+            
         self.close()
         
         dataset = "unknown"
@@ -359,7 +376,7 @@ class TestSet(object):
 
         #curs = self.cacheConnect()
         keys = [x.split()[0] for x in self.failureKeys]
-        testandlabel = self.testDir + "QQQ" + label
+        testandlabel = self.testDir + "QQQ" + str(label)
         replacements = dict( zip(keys, [testandlabel, value, lo, hi]))
         if overwrite:
             self._insertOrUpdate(self.failuresTable, replacements, ['testandlabel'], cache=True)
@@ -375,43 +392,60 @@ class TestSet(object):
         # we want to overwrite entries if they exist, or insert them if they don't
         
         # delete the rows which match the selectKeys
-        where = []
-        for key in selectKeys:
-            if isinstance(replacements[key], str):
-                where.append(key + "='" + replacements[key] + "'")
+        if False:
+            where = []
+            for key in selectKeys:
+                if isinstance(replacements[key], str):
+                    where.append(key + "='" + replacements[key] + "'")
+                else:
+                    where.append(key + "=" + str(replacements[key]))
+            where = " where " + " and ".join(where)
+
+            cmd = "delete from " + table + " " + where
+
+
+            if not cache:
+                self.connect()
+
+            if not cache:
+                self.curs.execute(cmd)
             else:
-                where.append(key + "=" + str(replacements[key]))
-        where = " where " + " and ".join(where)
-        
-        cmd = "delete from " + table + " " + where
+                self.cacheCurs.execute(cmd)
 
 
+            # insert the new data
+            keys = []
+            values = []
+            for k,v in replacements.items():
+                keys.append(k)
+                values.append(v)
+            values = tuple(values)
+            inlist = " (id, entrytime,"+ ",".join(keys) + ") "
+            qmark = " (NULL, strftime('%s', 'now')," + ",".join("?"*len(values)) + ")"
+            cmd = "insert into "+table+inlist + " values " + qmark
+        else:
+            # insert the new data
+            keys = []
+            values = []
+            for k,v in replacements.items():
+                keys.append(k)
+                values.append(v)
+            values = tuple(values)
+            inlist = " ("+ ",".join(keys) + ") "
+            qmark = " ("+ ",".join("?"*len(values)) + ")"
+            cmd = "replace into "+table+inlist + " values " + qmark
+            
+        print cmd, values
         if not cache:
             self.connect()
-
-        if not cache:
-            self.curs.execute(cmd)
-        else:
-            self.cacheCurs.execute(cmd)
-
-        
-        # insert the new data
-        keys = []
-        values = []
-        for k,v in replacements.items():
-            keys.append(k)
-            values.append(v)
-        values = tuple(values)
-        inlist = " (id, entrytime,"+ ",".join(keys) + ") "
-        qmark = " (NULL, strftime('%s', 'now')," + ",".join("?"*len(values)) + ")"
-        cmd = "insert into "+table+inlist + " values " + qmark
-
         if not cache:
             self.curs.execute(cmd, values)
-            self.conn.commit()
+            if not useApsw:
+                self.conn.commit()
         else:
             self.cacheCurs.execute(cmd, values)
-            self.cacheConn.commit()
+            if not useApsw:
+                self.cacheConn.commit()
 
         if not cache:
             self.close()
@@ -433,10 +467,12 @@ class TestSet(object):
 
         if not cache:
             self.curs.execute(cmd, values)
-            self.conn.commit()
+            if not useApsw:
+                self.conn.commit()
         else:
             self.cacheCurs.execute(cmd, values)
-            self.cacheConn.commit()
+            if not useApsw:
+                self.cacheConn.commit()
 
 
     def addTests(self, testList):
@@ -452,8 +488,11 @@ class TestSet(object):
             # load the summary
             sql = "select label,entrytime,value,lowerlimit,upperlimit from summary"
             self.connect()
-            self.curs.execute(sql)
-            results = self.curs.fetchall()
+            if useApsw:
+                results = self.curs.execute(sql)
+            else:
+                self.curs.execute(sql)
+                results = self.curs.fetchall()
             self.close()
             
             # write failures
@@ -475,8 +514,11 @@ class TestSet(object):
             # load the figures
             sql = "select filename from figure"
             self.connect()
-            self.curs.execute(sql)
-            figures = self.curs.fetchall()
+            if useApsw:
+                figures = self.curs.execute(sql)
+            else:
+                self.curs.execute(sql)
+                figures = self.curs.fetchall()
             self.close()
 
             # write allfigtable
@@ -544,7 +586,7 @@ class TestSet(object):
                     curs = self.cacheConnect()
                     self._writeFailure(test.label, test.value, test.limits[0], test.limits[1])
                     self.cacheClose()
-                raise TestFailError("Failed test '"+test.label+"': " +
+                raise TestFailError("Failed test '"+str(test.label)+"': " +
                                         "value '" + str(test.value) + "' not in range '" +
                                         str(test.limits)+"'.")
         except TestFailError, e:
@@ -636,7 +678,43 @@ class TestSet(object):
             replacements = dict( zip(keys, [path, caption]))
             self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
             self.cacheClose()
+
+
+    def addFigureFile(self, basename, caption, areaLabel=None, toggle=None, navMap=False):
+        """Add a figure to this test suite.
         
+        @param filename The basename of the figure.
+        @param caption  text describing the figure
+        @param areaLabel a string associating the figure with a map area in a navigation figure
+        @param navMap    Identify this figure as a navigation map figure containing linked map areas.
+        """
+
+        orig_path, orig_file = os.path.split(basename)
+        
+        # sub in the areaLabel, if given
+        filename = orig_file
+        if not toggle is None:
+            filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
+        if not areaLabel is None:
+            filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
+
+        path = os.path.join(self.wwwDir, filename)
+
+        #os.symlink(basename, path)
+        shutil.copyfile(basename, path)
+        
+        keys = [x.split()[0] for x in self.tables[self.figTable]]
+        replacements = dict( zip(keys, [filename, caption]))
+        self._insertOrUpdate(self.figTable, replacements, ['filename'])
+
+        if self.wwwCache:
+            curs = self.cacheConnect()
+            keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
+            replacements = dict( zip(keys, [path, caption]))
+            self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
+            self.cacheClose()
+
+            
     def importLogs(self, logFiles):
         """Import logs from logFiles output by pipette."""
         
@@ -674,8 +752,11 @@ class TestSet(object):
 
             cmd = "create table if not exists " + table + " ("+",".join(keys)+")"
             self.connect()
-            self.curs.execute(cmd)
-            self.conn.commit()
+            if useApsw:
+                self.curs.execute(cmd)
+            else:
+                self.curs.execute(cmd)
+                self.conn.commit()
             self.close()
 
             for setup in setups:

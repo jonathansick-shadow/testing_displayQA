@@ -1,5 +1,5 @@
-setupRequired(afw >= 4.9.0.0)
-setupRequired(utils >= 4.8.0.0)
+#setupRequired(afw >= 4.9.0.0)
+#setupRequired(utils >= 4.8.0.0)
 
 setupRequired(numpy >= 1.6.1+4)
 setupRequired(matplotlib >= 1.1.0+3)

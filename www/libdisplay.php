@@ -1057,7 +1057,9 @@ function writeMappedFigures($suffix="map") {
         if (preg_match("/.tiff$/", $path)) {
             $imgTag = "<object data=\"$path\" type=\"image/tiff\" usemap=\"#$base\"><param name=\"negative\" value=\"yes\"></object>\n";
         } else {
-            $imgTag = "<img src=\"$path\" usemap=\"#$base\">\n";
+            $imsize = getimagesize($path);
+            $width = ($imsize[0] > 700) ? "width='500'" : "";
+            $imgTag = "<img src=\"$path\" usemap=\"#$base\" $width>\n";
         }
 
         $imgDiv->append($imgTag);
@@ -1077,6 +1079,56 @@ function writeMappedFigures($suffix="map") {
         
         $j += 1;
     }
+    return $out;
+}
+
+
+function writeFigureArray($images_in) {
+
+    $images = array();
+    foreach ($images_in as $im) {
+        $nav = preg_replace("/png$/", "navmap", $im);
+        if (! file_exists($nav)) {
+            $images[] = $im;
+        }
+    }
+    
+    $cams = array(
+        10 => 'suprimecam'
+        );
+    $widths  = array('suprimecam' => 5);
+    $heights = array('suprimecam' => 2);
+    $orders   = array('suprimecam' => array(6, 7, 2, 1, 0, 8, 9, 5, 4, 3));
+    
+    $N = count($images);
+    $w = intval(sqrt($N)) + 1;
+    $h = intval(sqrt($N));
+    $order = range(0, $N);
+    foreach ($cams as $n => $cam) {
+        if ($N % $n == 0) {
+            $w = $widths[$cam];
+            $h = $heights[$cam];
+            $order = $orders[$cam];
+        }
+    }
+    
+    $mod = ($w) ? $w : 1;
+    $max_width = 650;
+    $im_width = $max_width/$mod;
+    $tab = new Table();
+    $imarray = array();
+    for ($i=0; $i< $N; $i++) {
+        $im = $images[$order[$i]];
+        $imarray[] = "<img src='$im' width='$im_width'>\n";
+        if ($i%$mod == $mod-1) {
+            $tab->addRow($imarray);
+            $imarray = array();
+        }
+    }
+    if (count($imarray) > 0) {
+        $tab->addRow($imarray);
+    }
+    $out = $tab->write();
     return $out;
 }
 
@@ -1111,9 +1163,16 @@ function writeFigures() {
     $db = null;
 
     $captions = array();
+    $allfilenames = array();
     foreach ($results as $r) {
         $captions[$r['filename']] = $r['caption'];
+        $allfilenames[] = $testDir."/".$r['filename'];
     }
+
+    if ($active == 'all' && count($figures) == 0) {
+        return writeFigureArray($allfilenames);
+    }
+        
     
     $j = 0;
     $out = "";
@@ -1140,7 +1199,9 @@ function writeFigures() {
             # this doesn't work.  tiffs disabled for now.
             $imgTag = "<object data=\"$path\" type=\"image/tiff\"><param name=\"negative\" value=\"yes\"></object>";
         } else {
-            $imgTag = "<img src=\"$path\">";
+            $imsize = getimagesize($path);
+            $width = ($imsize[0] > 700) ? "width='500'" : "";
+            $imgTag = "<img src=\"$path\" $width>";
         }
         
         $img = new Table();
@@ -2167,7 +2228,9 @@ function listFailures() {
             $table->addRow(array($link, $label, $valueStr, "[$loStr, $hiStr]", $checkbox));
             $out .= $table->write();
             foreach ($figs as $f) {
-                $out .= "<img src=\"$testDir/$f\">\n";
+                $imsize = getimagesize($path);
+                $width = ($imsize[0] > 700) ? "width='500'" : "";
+                $out .= "<img src=\"$testDir/$f\" $width>\n";
             }
         }
         $i += 1;
