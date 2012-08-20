@@ -139,9 +139,11 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue", proj
         print ""
         print "Cleaning existing data from", dest, ":"
         dbFile = os.path.join(dest, "db.sqlite3")
-        if os.path.exists(dbFile):
-            print "   ", os.path.split(dbFile)[1]
-            os.remove(dbFile)
+        envFile = os.path.join(dest, "environment.php")
+        for f in [dbFile, envFile]:
+            if os.path.exists(f):
+                print "   ", os.path.split(f)[1]
+                os.remove(f)
         for testDir in glob.glob(os.path.join(dest, "test_*")):
             print "   ", os.path.split(testDir)[1]
             shutil.rmtree(testDir)

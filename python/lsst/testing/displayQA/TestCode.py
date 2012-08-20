@@ -2,6 +2,7 @@ import sys
 import traceback
 import os
 import re
+import glob
 import inspect
 import stat
 import shutil
@@ -139,6 +140,7 @@ class TestSet(object):
         if not os.path.exists(self.wwwDir):
             try:
                 os.mkdir(self.wwwDir)
+                os.chmod(self.wwwDir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
             except os.error, e:  # as exc: # Python >2.5
                 if e.errno != errno.EEXIST:
                     raise
@@ -253,8 +255,10 @@ class TestSet(object):
         return data
 
 
-    def shelve(self, label, dataDict):
-        if self.useCache:
+    def shelve(self, label, dataDict, useCache=None):
+        if useCache is None:
+            useCache = self.useCache
+        if useCache:
             filename = os.path.join(self.wwwDir, label+".shelve")
             shelf = shelve.open(filename)
             for k,v in dataDict.items():
@@ -654,7 +658,122 @@ class TestSet(object):
             replacements = dict( zip(tablekeys, [key, 0, 1, 1, "Uncaught exception", exceptDict[key]]) )
             self._insertOrUpdate(self.summTable, replacements, ['label'])
 
+            
+    def _writeWrapperScript(self, pymodule, figname, plotargs, pythonpath=""):
+        pyscript = re.sub(".pyc$", ".py", pymodule.__file__)
+        pypath, pyfile = os.path.split(pyscript)
         
+        
+        s = ""
+        fig_path = os.path.join(self.wwwDir, figname)
+        sh_wrapper = fig_path + ".sh"
+
+        fig_path = os.path.join(self.testDir, figname)
+        
+        if plotargs is None:
+           plotargs = "" 
+
+        enviro_path = os.path.join(self.wwwBase, "environment.php")
+        if not os.path.exists(enviro_path):
+            fp = open(enviro_path, 'w')
+            s  = "<?php\n"
+            s += "$qa_environment = array(\n"
+            s += "   'MPLCONFIGDIR' => '%s',\n" % (os.path.join(os.getenv('WWW_ROOT'), ".matplotlib"))
+            s += "   'PATH' => '%s:%s',\n" % (os.getenv('PATH'), pypath)
+            s += "   'PYTHONPATH' => '%s',\n" % (os.getenv('PYTHONPATH'))
+            s += "   'LD_LIBRARY_PATH' => '%s'\n" % (os.getenv('LD_LIBRARY_PATH'))
+            s += "   );\n"
+            fp.write(s)
+            fp.close()
+            
+        fp = open(sh_wrapper, 'w')
+        s = "#!/usr/bin/env bash\n"
+        s += pyfile + " " + fig_path + " " + plotargs + "\n"
+        fp.write(s)
+        fp.close()
+        os.chmod(sh_wrapper, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+
+
+        
+    def cacheLazyData(self, dataDict, filename, toggle=None, areaLabel=None,
+                      masterToggle=None):
+        """ """
+
+        cacheName = filename
+        if not toggle is None:
+            filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
+            if masterToggle  and  toggle != masterToggle:
+                cacheName = re.sub("(\.\w{3})$", r"."+masterToggle+r"\1", cacheName)
+        if not areaLabel is None:
+            filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
+            cacheName = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", cacheName)
+
+        path = os.path.join(self.wwwDir, filename)
+        cachePath = os.path.join(self.wwwDir, cacheName)
+            
+        if masterToggle is None  or  toggle == masterToggle:
+            self.shelve(filename, dataDict, useCache=True)
+        else:
+            for f in glob.glob(cachePath+".shelve.*"):
+                shelfLink = re.sub(masterToggle, toggle, f)
+                if not os.path.exists(shelfLink):
+                    os.symlink(f, shelfLink)
+        
+
+                
+    def addLazyFigure(self, dataDict, filename, caption, pymodule,
+                      plotargs=None, toggle=None, areaLabel=None, pythonpath="", masterToggle=None):
+        """Add a figure to this test suite.
+        """
+
+        
+        cacheName = filename
+        if not toggle is None:
+            filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
+            if masterToggle  and  toggle != masterToggle:
+                cacheName = re.sub("(\.\w{3})$", r"."+masterToggle+r"\1", cacheName)
+        if not areaLabel is None:
+            filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
+            cacheName = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", cacheName)
+            
+        path = os.path.join(self.wwwDir, filename)
+        cachePath = os.path.join(self.wwwDir, cacheName)
+        
+        # shelve the data
+        if areaLabel != 'all':
+            # if there's no masterToggle, or if this toggle is the master ... cache
+            if masterToggle is None  or  toggle == masterToggle:
+                self.shelve(filename, dataDict, useCache=True)
+            else:
+                for f in glob.glob(cachePath+".shelve.*"):
+                    shelfLink = re.sub(masterToggle, toggle, f)
+                    if not os.path.exists(shelfLink):
+                        os.symlink(f, shelfLink)
+        
+        # create an empty file
+        fp = open(path, 'w')
+        fp.close()
+        os.chmod(path,
+                 stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+                 
+        
+        # write the script to generate the real figure
+        self._writeWrapperScript(pymodule, filename, plotargs, pythonpath)
+
+        
+        keys = [x.split()[0] for x in self.tables[self.figTable]]
+        replacements = dict( zip(keys, [filename, caption]))
+        self._insertOrUpdate(self.figTable, replacements, ['filename'])
+
+        if self.wwwCache:
+            curs = self.cacheConnect()
+            keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
+            replacements = dict( zip(keys, [path, caption]))
+            self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
+            self.cacheClose()
+        
+
+            
     def addFigure(self, fig, basename, caption, areaLabel=None, toggle=None, navMap=False):
         """Add a figure to this test suite.
         

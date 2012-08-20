@@ -13,6 +13,12 @@ function p($val,$ret=0) {
     if ($ret > 0) {$i = 0;}
 }
 
+include_once("config.php");
+if ($display_errors) {
+    ini_set('display_errors', 'On');
+    error_reporting(E_ALL);
+}
+
 
 ######################################
 # true/false color
@@ -78,6 +84,13 @@ function getDefaultTitle() {
 
 function getDefaultH1() {
     return "Q.A. Test Summary &nbsp;&nbsp; <a href=\"../\"><font size=\"3\">Go to main rerun list.</font></a>";
+}
+
+function writeImgTag($dir, $filename, $details) {
+    $path = "$dir/$filename";
+    #$debug = (! file_exists($path) || filesize($path) < 10) ? "generating" : "loaded";
+    $s = "<img src=\"imageGenerate.php?imgen_path=$path\" $details>"; #"<b>$debug</b>";
+    return $s;
 }
 
 
@@ -282,7 +295,7 @@ function getToggleNames() {
     $d = @dir("$testDir");
     $toggles = array();
     while( false !== ($f = $d->read())) {
-        if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
+        if (! preg_match("/.(png|PNG|jpg|JPG)$/", $f)) { continue; }
         if (! preg_match("/$active/", $f)) { continue; }
         $tog = preg_replace("/^.*\.([^-.]+)[\.-].*$/", "$1", $f);
         if ($tog != $f) {
@@ -947,14 +960,24 @@ function writeTable_metadata() {
     $prep->execute();
     $results = $prep->fetchAll();
     $db = null;
-    
+
+    $sql = "";
     foreach ($results as $r) {
         if (preg_match("/[dD]escription/", $r['key'])) {
             continue;
-        } 
+        }
+        if (preg_match("/[sS][qQ][Ll]/", $r['key'])) {
+            $sql .= wordwrap("<b>".$r['key']."</b><br/>".$r['value'], 40, "<br/>\n")."<br/><br/>\n";
+            continue;
+        }        
         $meta->addRow(array($r['key'].":", $r['value']));
     }
     $meta->addRow(array("Active:", $active));
+    if (strlen($sql) > 10) {
+        $sqllink = "<a href=\"#\" id=\"displaySql\"></a>\n".
+            "<div id=\"toggleSql\" style=\"display:none\">".$sql."</div>\n";
+        $meta->addRow(array("SQL:", $sqllink));
+    }
     return $meta->write();
 }
 
@@ -1199,7 +1222,7 @@ function writeFigures() {
 
     $figures = array();
     while( false !== ($f = $d->read())) {
-        if (! preg_match("/.(png|PNG|jpg|JPG)/", $f)) { continue; }
+        if (! preg_match("/.(png|PNG|jpg|JPG)$/", $f)) { continue; }
         if (! preg_match("/$active/", $f)) { continue; }
         if (preg_match("/Thumb.png/", $f)) { continue; }
         $figures[] = $f;
@@ -1239,7 +1262,7 @@ function writeFigures() {
         $path = "$testDir/$f";
 
         # skip mapped files (they're obtained with writeMappedFigures() )
-        $base = preg_replace("/.(png|PNG|jpg|JPG)/", "", $path);
+        $base = preg_replace("/.(png|PNG|jpg|JPG)$/", "", $path);
         $map = $base . ".map";
         $navmap = $base . ".navmap";
         if (file_exists($map) or file_exists($navmap)) {
@@ -1249,14 +1272,19 @@ function writeFigures() {
         $mtime = date("Y-m_d H:i:s", filemtime($path));
 
         # tiff must be handled specially
-         
+
         if (preg_match("/.tiff$/", $path)) {
             # this doesn't work.  tiffs disabled for now.
             $imgTag = "<object data=\"$path\" type=\"image/tiff\"><param name=\"negative\" value=\"yes\"></object>";
         } else {
-            $imsize = getimagesize($path);
+            $imsize = array(0);
+            if (filesize($path) > 10) {
+                $imsize = getimagesize($path);
+            }
             $width = ($imsize[0] > 700) ? "width='500'" : "";
             $imgTag = "<img src=\"$path\" $width>";
+            $details = "$width";
+            $imgTag = writeImgTag($testDir, $f, $details); #"<img src=\"$path\">";
         }
         
         $img = new Table();
