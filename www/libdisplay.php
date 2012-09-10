@@ -1247,7 +1247,7 @@ function writeFigures() {
         $allfilenames[] = $testDir."/".$r['filename'];
     }
 
-    if ($active == 'all' && count($figures) == 0) {
+    if ($active == 'all' && count($figures) == 0 && !preg_match("/performanceQa/", $testDir)) {
         return writeFigureArray($allfilenames);
     }
         
