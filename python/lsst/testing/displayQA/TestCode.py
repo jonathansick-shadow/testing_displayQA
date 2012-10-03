@@ -106,6 +106,8 @@ class TestSet(object):
         @param group  A category this testSet belongs to
         """
 
+        self.conn = None
+        
         missing = []
         for env in ["WWW_ROOT", "WWW_RERUN"]:
             if not os.environ.has_key(env):
@@ -113,8 +115,6 @@ class TestSet(object):
         if len(missing) > 0:
             raise Exception("Must set environment variable:\n", "\n".join(missing))
 
-
-        self.conn = None
 
         self.useCache = useCache
         self.wwwCache = wwwCache
