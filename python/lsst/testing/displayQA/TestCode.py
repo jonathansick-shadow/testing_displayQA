@@ -7,7 +7,7 @@ import inspect
 import stat
 import shutil
 import eups
-import sqlite3 as sqlite
+import sqlite as sqlite
 #import apsw
 import errno
 import cPickle as pickle
