@@ -6,19 +6,25 @@ import glob
 import inspect
 import stat
 import shutil
-import eups
-import sqlite as sqlite
-#import apsw
+try:
+    import sqlite3
+except ImportError:
+    # try falling back to pysqlite
+    import sqlite as sqlite3
 import errno
 import cPickle as pickle
 import shelve
 
-import LogConverter as logConv
-
 import numpy
-BAD_VALUE = -99
 
 useApsw = False
+
+if useApsw:
+    import apsw
+
+import LogConverter as logConv
+
+BAD_VALUE = -99
 
 
 def which(program):
@@ -202,7 +208,7 @@ class TestSet(object):
         if useApsw:
             self.conn = apsw.Connetion(self.dbFile)
         else:
-            self.conn = sqlite.connect(self.dbFile)
+            self.conn = sqlite3.connect(self.dbFile)
         self.curs = self.conn.cursor()
         return self.curs
 
@@ -216,7 +222,7 @@ class TestSet(object):
         if useApsw:
             self.cacheConn = apsw.Connection(self.cacheDbFile)
         else: 
-            self.cacheConn = sqlite.connect(self.cacheDbFile)
+            self.cacheConn = sqlite3.connect(self.cacheDbFile)
         self.cacheCurs = self.cacheConn.cursor()
         return self.cacheCurs
 
