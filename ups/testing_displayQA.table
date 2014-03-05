@@ -1,9 +1,9 @@
-#setupRequired(afw >= 4.9.0.0)
-#setupRequired(utils >= 4.8.0.0)
+#setupRequired(afw)
+#setupRequired(utils)
 
-setupRequired(sconsUtils >= 2.1.0)
-setupRequired(numpy >= 1.4.1)
-setupRequired(matplotlib >= 1.1.0)
+setupRequired(sconsUtils)
+setupRequired(numpy)
+setupRequired(matplotlib)
 
 envAppend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envAppend(PATH, ${PRODUCT_DIR}/bin)
