@@ -6,9 +6,10 @@ except ImportError:
     # try falling back to pysqlite
     import sqlite as sqlite3
 
+
 class LogFileConverter (object):
     """Convert a pex_logging ascii log file to another format."""
-    
+
     def __init__(self, logFile):
 
         self.logFile = logFile
@@ -36,19 +37,17 @@ class LogFileConverter (object):
                 else:
                     thisLog.append(x[0].strip())
                     thisLog.append(x[1].strip())
-                
+
             # non-match means end of record
             else:
                 self.allLogs.append(thisLog)
                 thisLog = []
 
-
-        
     def writeSqlite3Table(self, dbFile, table):
         """Write the log file to a sqlite3 database table"""
 
         table = re.sub("-", "_", table)
-        
+
         conn = sqlite3.connect(dbFile)
 
         # add the table
@@ -62,7 +61,7 @@ class LogFileConverter (object):
             cmd = "insert into " + table + " values (NULL, ?, ?, ?, ?, ?)"
             conn.execute(cmd, tuple(thisLog))
         conn.commit()
-        
+
         conn.close()
-            
+
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # Original filename: bin/pipeQa.py
 #
-# Author: 
-# Email: 
+# Author:
+# Email:
 # Date: Mon 2011-04-11 13:11:01
-# 
-# Summary: 
-# 
+#
+# Summary:
+#
 
 import sys
 import re
@@ -16,7 +16,7 @@ import datetime
 
 import numpy
 
-import lsst.testing.displayQA         as dispQA
+import lsst.testing.displayQA as dispQA
 import lsst.testing.displayQA.figures as qaFig
 
 #############################################################
@@ -25,11 +25,12 @@ import lsst.testing.displayQA.figures as qaFig
 #
 #############################################################
 
+
 def main():
 
     ############################
     # create a TestSet
-    
+
     # assign it to a 'group', and give it a 'label'
     # - 'groups' are used to categorize tests
     #   --> eg. LSST visits; biases,flats,arcs; or in this case, 'tutorial'
@@ -39,7 +40,6 @@ def main():
     #   --> This allows multiple TestSets to be created in a single script.
     ts = dispQA.TestSet(group="tutorial", label="basic-howto")
 
-
     #############################
     # Adding metadata
 
@@ -48,18 +48,16 @@ def main():
     ts.addMetadata("time-run", date)
     ts.addMetadata("my-important-param", "important-value")
 
-
     #############################
     # Adding Tests
-
 
     #########
     # test 1
     # create some values we'd like to test, along with the range we consider acceptable
-    val1label        = "v1-label"    # a label to refer to this test/value (no spaces or underscores)
-    importantVal1    = 1.0           # the value to test
+    val1label = "v1-label"    # a label to refer to this test/value (no spaces or underscores)
+    importantVal1 = 1.0           # the value to test
     acceptableRange1 = [0.0, 2.0]    # the range (inclusive) considered a 'pass'
-    comment1         = "A very important value!"  # additional info about this value
+    comment1 = "A very important value!"  # additional info about this value
 
     # make the Test, and add it to the TestSet
     test1 = dispQA.Test(val1label, importantVal1, acceptableRange1, comment1)
@@ -76,8 +74,6 @@ def main():
     # test 3
     # - note that addTest() actually accepts test parameters directly
     ts.addTest("v3-label", 99.0, [98.0, 100], "the great one!")
-    
-
 
     ##############################
     # Adding an matplotlib Figures
@@ -92,11 +88,11 @@ def main():
     y = numpy.sin(x)
 
     figName = 'sineWave.png'
-    dat = {'x':x, 'y': y}
+    dat = {'x': x, 'y': y}
     caption = "A sine wave from 0 to 2*pi."
 
     plot = False
-    
+
     import lazyPlot1
     if plot:
         fig = lazyPlot1.plot(dat)
@@ -105,9 +101,6 @@ def main():
         ts.addLazyFigure(dat, figName, caption, lazyPlot1, plotargs='b')
 
 
-
-
-
 if __name__ == '__main__':
     main()
-    
+

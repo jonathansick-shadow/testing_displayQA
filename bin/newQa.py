@@ -2,17 +2,21 @@
 #
 # Original filename: bin/newQa.py
 #
-# Author: 
-# Email: 
+# Author:
+# Email:
 # Date: Thu 2011-06-09 14:00:22
-# 
-# Summary: 
-# 
+#
+# Summary:
+#
 """
 %prog [options] name
 """
 
-import sys, os, re, glob, shutil
+import sys
+import os
+import re
+import glob
+import shutil
 import optparse
 
 haveEups = True
@@ -20,7 +24,7 @@ try:
     import eups
 except:
     haveEups = False
-    
+
 
 #############################################################
 #
@@ -40,11 +44,10 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue", proj
             missing.append(envVar)
     if len(missing) > 0:
         raise Exception("Missing environment variable(s):\n", "\n".join(missing))
-    
+
     if wwwRoot is None:
         wwwRoot = os.environ['WWW_ROOT']
     dqaDir = os.environ['TESTING_DISPLAYQA_DIR']
-
 
     # get our version
     if haveEups:
@@ -56,7 +59,6 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue", proj
             version = v
         else:
             version = "working-copy-%s" % (v)
-
 
     # check to see if qaname already exists with different version
     dest = os.path.join(wwwRoot, qaName)
@@ -82,15 +84,13 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue", proj
                 fp = open(os.path.join(dest, "version"), 'w')
                 fp.write("%s\n" % version)
                 fp.close()
-            
+
     else:
         os.mkdir(dest)
         fp = open(os.path.join(dest, "version"), 'w')
         fp.write("%s\n" % version)
         fp.close()
 
-
-                
     # copy the www/ to the destination
     src = os.path.join(dqaDir, "www")
     patterns = ["php", "js"]
@@ -110,10 +110,10 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue", proj
     style_base = "style_"+color+".css"
     favicon_base = project+"_favicon_"+color+".png"
     files = [
-        [style_base,   os.path.join(src, style_base),   os.path.join(dest, "style.css")],
+        [style_base, os.path.join(src, style_base), os.path.join(dest, "style.css")],
         [favicon_base, os.path.join(src, favicon_base), os.path.join(dest, "favicon.ico")],
-        ]
-        
+    ]
+
     for file_base, file_color, file_dest in files:
         if os.path.exists(file_color):
             print "installing: ", file_base
@@ -129,11 +129,10 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue", proj
             msg += "Available colors: " + ", ".join(colors)
             print msg
             sys.exit()
-        
+
     print ""
     print "Created new QA site served from:"
-    print "   ",dest
-
+    print "   ", dest
 
     envFile = os.path.join(dest, "environment.php")
     if forceClean:
@@ -151,14 +150,14 @@ def main(qaName, wwwRoot=None, force=False, forceClean=False, color="blue", proj
     # touch the environment file to make sure it's there.
     with file(envFile, 'a'):
         os.utime(envFile, None)
-            
+
 #############################################################
 # end
 #############################################################
 
 if __name__ == '__main__':
     parser = optparse.OptionParser(usage=__doc__)
-    
+
     parser.add_option('-c', '--color', default="blue",
                       help="Specify style color (default=%default)")
     parser.add_option("-f", '--force', default=False, action="store_true",
@@ -179,12 +178,11 @@ if __name__ == '__main__':
     qaName, = args
 
     if opts.forceClean and not opts.noquery:
-        query = raw_input("--forceClean is set, and will to delete any/all existing data in rerun %s."\
+        query = raw_input("--forceClean is set, and will to delete any/all existing data in rerun %s."
                           " Continue [y/N]: " % (qaName))
         if not re.search("^[yY]", query):
             print "Exiting. (You may wish to consider --force instead of --forceClean)"
             sys.exit(1)
-        
 
     if opts.forceClean:
         opts.force = True
@@ -193,7 +191,7 @@ if __name__ == '__main__':
     if not re.search('^(lsst|hsc)$', opts.project):
         print "project must be 'lsst' or 'hsc'"
         sys.exit(1)
-        
+
     main(qaName, wwwRoot=opts.root, force=opts.force, forceClean=opts.forceClean,
          color=opts.color, project=opts.project)
-    
+

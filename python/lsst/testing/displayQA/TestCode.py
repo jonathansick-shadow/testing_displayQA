@@ -43,12 +43,14 @@ def which(program):
 
 
 class TestFailError(Exception):
+
     def __init__(self, message):
         self.message = message
+
     def __str__(self):
         return repr(self.message)
-    
-    
+
+
 class Test(object):
     """A class to verify some condition is met.
     """
@@ -61,7 +63,7 @@ class Test(object):
         @param comment    A comment with extra info about the test
         @param areaLabel  [optional] Label associating this test with a mapped area in a figure.
         """
-        
+
         self.label = label
         if not areaLabel is None:
             self.label += " -*- "+areaLabel
@@ -74,7 +76,7 @@ class Test(object):
                 self.value = value
         else:
             self.value = value
-            
+
         self.comment = comment
 
     def __str__(self):
@@ -82,7 +84,7 @@ class Test(object):
 
     def evaluate(self):
         """Verify that our value is within our limits."""
-        
+
         # grab a traceback for failed tests
         if (not self.limits[0] is None) and (not self.limits[1] is None):
             if (self.value < self.limits[0] or self.value > self.limits[1]):
@@ -105,7 +107,7 @@ class Test(object):
 
 class TestSet(object):
     """A container for Test objects and associated matplotlib figures."""
-    
+
     def __init__(self, label=None, group="", clean=False, useCache=False, alias=None, wwwCache=False):
         """
         @param label  A name for this testSet
@@ -113,14 +115,13 @@ class TestSet(object):
         """
 
         self.conn = None
-        
+
         missing = []
         for env in ["WWW_ROOT", "WWW_RERUN"]:
             if not os.environ.has_key(env):
                 missing.append(env)
         if len(missing) > 0:
             raise Exception("Must set environment variable:\n", "\n".join(missing))
-
 
         self.useCache = useCache
         self.wwwCache = wwwCache
@@ -133,7 +134,7 @@ class TestSet(object):
             self.testfileBase = re.sub(".py", "", os.path.split(testfileName)[1])
         else:
             self.testfileBase = alias
-            
+
         prefix = "test_"+group+"_"
         self.testDir = prefix+self.testfileBase
         if not label is None:
@@ -151,23 +152,23 @@ class TestSet(object):
                 if e.errno != errno.EEXIST:
                     raise
 
-
         # connect to the db and create the tables
         self.connect()
         #self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
         #self.conn = sqlite.connect(self.dbFile)
         #self.curs = self.conn.cursor()
         self.summTable, self.figTable, self.metaTable, self.eupsTable = \
-                        "summary", "figure", "metadata", "eups"
+            "summary", "figure", "metadata", "eups"
         self.tables = {
-            self.summTable : ["label text unique", "value double",
-                              "lowerlimit double", "upperlimit double", "comment text",
-                              "backtrace text"],
-            self.figTable  : ["filename text", "caption text"],
-            self.metaTable : ["key text", "value text"],
-            }
+            self.summTable: ["label text unique", "value double",
+                             "lowerlimit double", "upperlimit double", "comment text",
+                             "backtrace text"],
+            self.figTable: ["filename text", "caption text"],
+            self.metaTable: ["key text", "value text"],
+        }
 
-        self.stdKeys = ["id integer primary key autoincrement", "entrytime timestamp DEFAULT (strftime('%s','now'))"]
+        self.stdKeys = ["id integer primary key autoincrement",
+                        "entrytime timestamp DEFAULT (strftime('%s','now'))"]
         for k, v in self.tables.items():
             keys = self.stdKeys + v
             cmd = "create table if not exists " + k + " ("+",".join(keys)+")"
@@ -176,7 +177,6 @@ class TestSet(object):
         self.conn.commit()
         self.close()
 
-        
         self.tests = []
 
         # create the cache table
@@ -185,23 +185,22 @@ class TestSet(object):
             self.failuresTable = "failures"
             self.allFigTable = "allfigures"
             self.cacheTables = {
-                self.countsTable : ["test text", "ntest integer", "npass integer", "dataset text",
+                self.countsTable: ["test text", "ntest integer", "npass integer", "dataset text",
                                    "oldest timestamp", "newest timestamp", "extras text"],
-                self.failuresTable : ["testandlabel text unique", "value double",
-                                      "lowerlimit double", "upperlimit double", "comment text"],
-                self.allFigTable : ["path text", "caption text"],
-                }
-            
+                self.failuresTable: ["testandlabel text unique", "value double",
+                                     "lowerlimit double", "upperlimit double", "comment text"],
+                self.allFigTable: ["path text", "caption text"],
+            }
+
             self.countKeys = self.cacheTables[self.countsTable]
             self.failureKeys = self.cacheTables[self.failuresTable]
-            
-            for k,v in self.cacheTables.items():
+
+            for k, v in self.cacheTables.items():
                 keys = self.stdKeys + v
                 cmd = "create table if not exists " + k + " ("+",".join(keys)+")"
                 curs = self.cacheConnect()
                 curs.execute(cmd)
                 self.cacheClose()
-
 
     def connect(self):
         self.dbFile = os.path.join(self.wwwDir, "db.sqlite3")
@@ -215,13 +214,12 @@ class TestSet(object):
     def close(self):
         if not self.conn is None:
             self.conn.close()
-        
 
     def cacheConnect(self):
         self.cacheDbFile = os.path.join(self.wwwBase, "db.sqlite3")
         if useApsw:
             self.cacheConn = apsw.Connection(self.cacheDbFile)
-        else: 
+        else:
             self.cacheConn = sqlite3.connect(self.cacheDbFile)
         self.cacheCurs = self.cacheConn.cursor()
         return self.cacheCurs
@@ -229,13 +227,10 @@ class TestSet(object):
     def cacheClose(self):
         if not self.cacheConn is None:
             self.cacheConn.close()
-            
 
-        
     def __del__(self):
         if not self.conn is None:
             self.conn.close()
-
 
     #########################################
     # routines to handle caching data
@@ -260,31 +255,28 @@ class TestSet(object):
                 fp.close()
         return data
 
-
     def shelve(self, label, dataDict, useCache=None):
         if useCache is None:
             useCache = self.useCache
         if useCache:
             filename = os.path.join(self.wwwDir, label+".shelve")
             shelf = shelve.open(filename)
-            for k,v in dataDict.items():
+            for k, v in dataDict.items():
                 shelf[k] = v
             shelf.close()
-            
+
     def unshelve(self, label):
         data = {}
         if self.useCache:
             filename = os.path.join(self.wwwDir, label+".shelve")
             try:
                 shelf = shelve.open(filename)
-                for k,v in shelf.items():
+                for k, v in shelf.items():
                     data[k] = v
                 shelf.close()
             except:
                 pass
         return data
-
-            
 
     def _verifyTest(self, value, lo, hi):
 
@@ -294,8 +286,8 @@ class TestSet(object):
             lo = float(lo)
         if not hi is None:
             hi = float(hi)
-    
-        cmp = 0   #true;  # default true (ie. no limits were set)
+
+        cmp = 0  # true;  # default true (ie. no limits were set)
         if ((not lo is None) and (not hi is None)):
             if (value < lo):
                 cmp = -1
@@ -306,7 +298,6 @@ class TestSet(object):
         elif ((lo is None) and (not hi is None) and (value > hi)):
             cmp = 1
         return cmp
-
 
     def _readCounts(self):
         sql = "select label,entrytime,value,lowerlimit,upperlimit from summary"
@@ -321,15 +312,15 @@ class TestSet(object):
 
         # key: [regex, displaylabel, units, values]
         extras = {
-            'fwhm' : [".*fwhm.*",                    "fwhm",            "[&Prime;] (FWHM)",           []],
-            'r50'  : [".*median astrometry error.*", "r<sub>50</sub>",  "[&Prime;] (Ast.error)", []],
-            'std'  : [".*stdev psf_vs_cat.*",        "&sigma;<sub>phot</sub>", "[mag] (psf-cat)",  []],
-            'comp' : [".*photometric depth.*",       "&omega;<sub>50</sub>", "[mag] (Completeness)", []],
-            "nccd" : [".*nCcd.*",                    "n<sub>CCD</sub>",      "(num. CCDs proc.)",     []],
-            "nstar": [".*nDet.*",                    "n<sub>*</sub>",        "(num. Detections)",  []],
+            'fwhm': [".*fwhm.*", "fwhm", "[&Prime;] (FWHM)", []],
+            'r50': [".*median astrometry error.*", "r<sub>50</sub>", "[&Prime;] (Ast.error)", []],
+            'std': [".*stdev psf_vs_cat.*", "&sigma;<sub>phot</sub>", "[mag] (psf-cat)", []],
+            'comp': [".*photometric depth.*", "&omega;<sub>50</sub>", "[mag] (Completeness)", []],
+            "nccd": [".*nCcd.*", "n<sub>CCD</sub>", "(num. CCDs proc.)", []],
+            "nstar": [".*nDet.*", "n<sub>*</sub>", "(num. Detections)", []],
             #'zero' : [".*median zeropoint.*",        "ZP",               "[mag] (Zeropoint)",        []],
-            }
-        
+        }
+
         # count the passed tests
         npass = 0
         ntest = 0
@@ -356,11 +347,11 @@ class TestSet(object):
         # encode any extras
         extraStr = ""
         extraValues = []
-        for k,v in extras.items():
+        for k, v in extras.items():
             if len(v[3]) > 0:
                 extraValues.append("%s:%.2f:%.2f:%s" % (v[1], numpy.mean(v[3]), numpy.std(v[3]), v[2]))
         extraStr = ",".join(extraValues)
-        
+
         # get the dataset from the metadata
         sql = "select key,value from metadata"
         self.connect()
@@ -369,17 +360,16 @@ class TestSet(object):
         else:
             self.curs.execute(sql)
             metaresults = self.curs.fetchall()
-            
+
         self.close()
-        
+
         dataset = "unknown"
         for m in metaresults:
             k, v = m
             if k == 'dataset':
                 dataset = v
-        
-        return ntest, npass, dataset, oldest, newest, extraStr
 
+        return ntest, npass, dataset, oldest, newest, extraStr
 
     def _writeCounts(self, ntest, npass, dataset="unknown", oldest=None, newest=None, extras=""):
         """Cache summary info for this TestSet
@@ -389,10 +379,9 @@ class TestSet(object):
 
         curs = self.cacheConnect()
         keys = [x.split()[0] for x in self.countKeys]
-        replacements = dict( zip(keys, [self.testDir, ntest, npass, dataset, oldest, newest, extras]))
+        replacements = dict(zip(keys, [self.testDir, ntest, npass, dataset, oldest, newest, extras]))
         self._insertOrUpdate(self.countsTable, replacements, ['test'], cache=True)
         self.cacheClose()
-
 
     def _writeFailure(self, label, value, lo, hi, overwrite=True):
         """Cache failure info for this TestSet
@@ -403,20 +392,19 @@ class TestSet(object):
         #curs = self.cacheConnect()
         keys = [x.split()[0] for x in self.failureKeys]
         testandlabel = self.testDir + "QQQ" + str(label)
-        replacements = dict( zip(keys, [testandlabel, value, lo, hi]))
+        replacements = dict(zip(keys, [testandlabel, value, lo, hi]))
         if overwrite:
             self._insertOrUpdate(self.failuresTable, replacements, ['testandlabel'], cache=True)
         else:
             self._pureInsert(self.failuresTable, replacements, ['testandlabel'], cache=True)
-        #self.cacheClose()
+        # self.cacheClose()
 
-        
     def _insertOrUpdate(self, table, replacements, selectKeys, cache=False):
         """Insert entries into a database table, overwrite if they already exist."""
-        
+
         # there must be a better sql way to do this ... but my sql-foo is weak
         # we want to overwrite entries if they exist, or insert them if they don't
-        
+
         # delete the rows which match the selectKeys
         if True:
             where = []
@@ -429,7 +417,6 @@ class TestSet(object):
 
             cmd = "delete from " + table + " " + where
 
-
             if not cache:
                 self.connect()
 
@@ -438,30 +425,29 @@ class TestSet(object):
             else:
                 self.cacheCurs.execute(cmd)
 
-
             # insert the new data
             keys = []
             values = []
-            for k,v in replacements.items():
+            for k, v in replacements.items():
                 keys.append(k)
                 values.append(v)
             values = tuple(values)
-            inlist = " (id, entrytime,"+ ",".join(keys) + ") "
+            inlist = " (id, entrytime," + ",".join(keys) + ") "
             qmark = " (NULL, strftime('%s', 'now')," + ",".join("?"*len(values)) + ")"
             cmd = "insert into "+table+inlist + " values " + qmark
         else:
             # insert the new data
             keys = []
             values = []
-            for k,v in replacements.items():
+            for k, v in replacements.items():
                 keys.append(k)
                 values.append(v)
             values = tuple(values)
-            inlist = " ("+ ",".join(keys) + ") "
-            qmark = " ("+ ",".join("?"*len(values)) + ")"
+            inlist = " (" + ",".join(keys) + ") "
+            qmark = " (" + ",".join("?"*len(values)) + ")"
             cmd = "replace into "+table+inlist + " values " + qmark
-            
-            #print cmd, values
+
+            # print cmd, values
             if not cache:
                 self.connect()
         if not cache:
@@ -475,19 +461,18 @@ class TestSet(object):
 
         if not cache:
             self.close()
-            
 
     def _pureInsert(self, table, replacements, selectKeys, cache=False):
         """Insert entries into a database table, overwrite if they already exist."""
-        
+
         # insert the new data
         keys = []
         values = []
-        for k,v in replacements.items():
+        for k, v in replacements.items():
             keys.append(k)
             values.append(v)
         values = tuple(values)
-        inlist = " (id, entrytime,"+ ",".join(keys) + ") "
+        inlist = " (id, entrytime," + ",".join(keys) + ") "
         qmark = " (NULL, strftime('%s', 'now')," + ",".join("?"*len(values)) + ")"
         cmd = "insert into "+table+inlist + " values " + qmark
 
@@ -500,12 +485,10 @@ class TestSet(object):
             if not useApsw:
                 self.cacheConn.commit()
 
-
     def addTests(self, testList):
 
         for test in testList:
             self.addTest(test)
-            
 
     def updateFailures(self, overwrite=True):
 
@@ -520,10 +503,10 @@ class TestSet(object):
                 self.curs.execute(sql)
                 results = self.curs.fetchall()
             self.close()
-            
+
             # write failures
             failSet = []
-            curs = self.cacheConnect()            
+            curs = self.cacheConnect()
             for r in results:
                 label, etime, value, lo, hi = r
                 if re.search("-*-", label):
@@ -536,7 +519,7 @@ class TestSet(object):
             self.cacheClose()
 
             failSet = set(failSet)
-            
+
             # load the figures
             sql = "select filename from figure"
             self.connect()
@@ -558,18 +541,17 @@ class TestSet(object):
                     tag = fileqqq.split("QQQ")[-1]
                     tag = tag.strip()
                     if tag in failSet:
-                        #print filebase
+                        # print filebase
                         path = str(os.path.join(self.wwwDir, filename))
-                        replacements = dict( zip(keys, [path, ""]))
+                        replacements = dict(zip(keys, [path, ""]))
                         if overwrite:
                             self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
                         else:
                             self._pureInsert(self.allFigTable, replacements, ['path'], cache=True)
 
             self.cacheClose()
-    
 
-    def updateCounts(self, dataset=None, increment=[0,0]):
+    def updateCounts(self, dataset=None, increment=[0, 0]):
 
         if self.wwwCache:
             ntest, npass = increment
@@ -585,7 +567,6 @@ class TestSet(object):
             # return the new settings
             return ntest, npass, dataset, oldest, newest, extras
 
-        
     def addTest(self, *args, **kwargs):
         """Add a test to this testing suite.
 
@@ -600,10 +581,10 @@ class TestSet(object):
 
         self.tests.append(test)
 
-        #cache the results
+        # cache the results
         passed = test.evaluate()
         npassed = 1 if passed else 0
-        
+
         # grab a traceback for failed tests
         backtrace = ""
         try:
@@ -613,24 +594,22 @@ class TestSet(object):
                     self._writeFailure(test.label, test.value, test.limits[0], test.limits[1])
                     self.cacheClose()
                 raise TestFailError("Failed test '"+str(test.label)+"': " +
-                                        "value '" + str(test.value) + "' not in range '" +
-                                        str(test.limits)+"'.")
+                                    "value '" + str(test.value) + "' not in range '" +
+                                    str(test.limits)+"'.")
         except TestFailError, e:
             exc_type, exc_value, exc_traceback = sys.exc_info()
             backtrace = "".join(traceback.format_stack()[:-1]) + "\n" + str(e)
-            
+
         if kwargs.has_key('backtrace'):
             backtrace = kwargs['backtrace']
-            
+
         # enter the test in the db
         keys = [x.split()[0] for x in self.tables[self.summTable]]
-        replacements = dict( zip(keys, [test.label, test.value, test.limits[0], test.limits[1], test.comment,
-                                        backtrace]) )
+        replacements = dict(zip(keys, [test.label, test.value, test.limits[0], test.limits[1], test.comment,
+                                       backtrace]))
         self._insertOrUpdate(self.summTable, replacements, ['label'])
 
-        self.updateCounts() #increment=[1, npassed])
-
-
+        self.updateCounts()  # increment=[1, npassed])
 
     def addMetadata(self, *args):
         """Associate metadata with this TestSet
@@ -640,9 +619,9 @@ class TestSet(object):
 
         def addOneKvPair(k, v):
             keys = [x.split()[0] for x in self.tables[self.metaTable]]
-            replacements = dict( zip(keys, [k, v]))
+            replacements = dict(zip(keys, [k, v]))
             self._insertOrUpdate(self.metaTable, replacements, ['key'])
-            
+
         if len(args) == 1:
             kvDict, = args
             for k, v in kvDict.items():
@@ -653,36 +632,32 @@ class TestSet(object):
         else:
             raise Exception("Metadata must be either dict (1 arg) or key,value pair (2 args).")
 
-
-        
     def importExceptionDict(self, exceptDict):
         """Given a dictionary of exceptions from TestData object, add the entries to the db."""
 
         keys = sorted(exceptDict.keys())
         for key in keys:
             tablekeys = [x.split()[0] for x in self.tables[self.summTable]]
-            replacements = dict( zip(tablekeys, [key, 0, 1, 1, "Uncaught exception", exceptDict[key]]) )
+            replacements = dict(zip(tablekeys, [key, 0, 1, 1, "Uncaught exception", exceptDict[key]]))
             self._insertOrUpdate(self.summTable, replacements, ['label'])
 
-            
     def _writeWrapperScript(self, pymodule, figname, plotargs, pythonpath=""):
         pyscript = re.sub(".pyc$", ".py", pymodule.__file__)
         pypath, pyfile = os.path.split(pyscript)
-        
-        
+
         s = ""
         fig_path = os.path.join(self.wwwDir, figname)
         sh_wrapper = fig_path + ".sh"
 
         fig_path = os.path.join(self.testDir, figname)
-        
+
         if plotargs is None:
-           plotargs = "" 
+            plotargs = ""
 
         enviro_path = os.path.join(self.wwwBase, "environment.php")
         if not os.path.exists(enviro_path) or os.stat(enviro_path).st_size == 0:
             fp = open(enviro_path, 'w')
-            s  = "<?php\n"
+            s = "<?php\n"
             s += "$qa_environment = array(\n"
             s += "   'MPLCONFIGDIR' => '%s',\n" % (os.path.join(os.getenv('WWW_ROOT'), ".matplotlib"))
             s += "   'PATH' => '%s:%s',\n" % (os.getenv('PATH'), pypath)
@@ -691,7 +666,7 @@ class TestSet(object):
             s += "   );\n"
             fp.write(s)
             fp.close()
-            
+
         fp = open(sh_wrapper, 'w')
         s = "#!/usr/bin/env bash\n"
         s += pyfile + " " + fig_path + " " + plotargs + "\n"
@@ -699,8 +674,6 @@ class TestSet(object):
         fp.close()
         os.chmod(sh_wrapper, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
-
-        
     def cacheLazyData(self, dataDict, filename, toggle=None, areaLabel=None,
                       masterToggle=None):
         """ """
@@ -708,7 +681,7 @@ class TestSet(object):
         cacheName = filename
         if not toggle is None:
             filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
-            if masterToggle  and  toggle != masterToggle:
+            if masterToggle and toggle != masterToggle:
                 cacheName = re.sub("(\.\w{3})$", r"."+masterToggle+r"\1", cacheName)
         if not areaLabel is None:
             filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
@@ -716,80 +689,72 @@ class TestSet(object):
 
         path = os.path.join(self.wwwDir, filename)
         cachePath = os.path.join(self.wwwDir, cacheName)
-            
-        if masterToggle is None  or  toggle == masterToggle:
+
+        if masterToggle is None or toggle == masterToggle:
             self.shelve(filename, dataDict, useCache=True)
         else:
             for f in glob.glob(cachePath+".shelve*"):
                 shelfLink = re.sub(masterToggle, toggle, f)
                 if not os.path.exists(shelfLink):
                     os.symlink(f, shelfLink)
-        
 
-                
     def addLazyFigure(self, dataDict, filename, caption, pymodule,
                       plotargs=None, toggle=None, areaLabel=None, pythonpath="", masterToggle=None):
         """Add a figure to this test suite.
         """
 
-        
         cacheName = filename
         if not toggle is None:
             filename = re.sub("(\.\w{3})$", r"."+toggle+r"\1", filename)
-            if masterToggle  and  toggle != masterToggle:
+            if masterToggle and toggle != masterToggle:
                 cacheName = re.sub("(\.\w{3})$", r"."+masterToggle+r"\1", cacheName)
         if not areaLabel is None:
             filename = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", filename)
             cacheName = re.sub("(\.\w{3})$", r"-"+areaLabel+r"\1", cacheName)
-            
+
         path = os.path.join(self.wwwDir, filename)
         cachePath = os.path.join(self.wwwDir, cacheName)
-        
+
         # shelve the data
         if areaLabel != 'all':
             # if there's no masterToggle, or if this toggle is the master ... cache
-            if masterToggle is None  or  toggle == masterToggle:
+            if masterToggle is None or toggle == masterToggle:
                 self.shelve(filename, dataDict, useCache=True)
             else:
                 for f in glob.glob(cachePath+".shelve*"):
                     shelfLink = re.sub(masterToggle, toggle, f)
                     if not os.path.exists(shelfLink):
                         os.symlink(f, shelfLink)
-        
+
         # create an empty file
         fp = open(path, 'w')
         fp.close()
         os.chmod(path,
                  stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
-                 
-        
+
         # write the script to generate the real figure
         self._writeWrapperScript(pymodule, filename, plotargs, pythonpath)
 
-        
         keys = [x.split()[0] for x in self.tables[self.figTable]]
-        replacements = dict( zip(keys, [filename, caption]))
+        replacements = dict(zip(keys, [filename, caption]))
         self._insertOrUpdate(self.figTable, replacements, ['filename'])
 
         if self.wwwCache:
             curs = self.cacheConnect()
             keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
-            replacements = dict( zip(keys, [path, caption]))
+            replacements = dict(zip(keys, [path, caption]))
             self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
             self.cacheClose()
-        
 
-            
     def addFigure(self, fig, basename, caption, areaLabel=None, toggle=None, navMap=False):
         """Add a figure to this test suite.
-        
+
         @param fig      a matplotlib figure
         @param filename The basename of the figure.
         @param caption  text describing the figure
         @param areaLabel a string associating the figure with a map area in a navigation figure
         @param navMap    Identify this figure as a navigation map figure containing linked map areas.
         """
-
 
         # sub in the areaLabel, if given
         filename = basename
@@ -808,22 +773,21 @@ class TestSet(object):
                 suffix = ".navmap"
             mapPath = re.sub("\.\w{3}$", suffix, path)
             fig.savemap(mapPath)
-        
+
         keys = [x.split()[0] for x in self.tables[self.figTable]]
-        replacements = dict( zip(keys, [filename, caption]))
+        replacements = dict(zip(keys, [filename, caption]))
         self._insertOrUpdate(self.figTable, replacements, ['filename'])
 
         if self.wwwCache:
             curs = self.cacheConnect()
             keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
-            replacements = dict( zip(keys, [path, caption]))
+            replacements = dict(zip(keys, [path, caption]))
             self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
             self.cacheClose()
 
-
     def addFigureFile(self, basename, caption, areaLabel=None, toggle=None, navMap=False):
         """Add a figure to this test suite.
-        
+
         @param filename The basename of the figure.
         @param caption  text describing the figure
         @param areaLabel a string associating the figure with a map area in a navigation figure
@@ -831,7 +795,7 @@ class TestSet(object):
         """
 
         orig_path, orig_file = os.path.split(basename)
-        
+
         # sub in the areaLabel, if given
         filename = orig_file
         if not toggle is None:
@@ -848,24 +812,22 @@ class TestSet(object):
         size = "200x200"
         if convert:
             os.system(convert + " " + path + " -resize "+size+" " + re.sub(".png$", "Thumb.png", path))
-            
-        
+
         keys = [x.split()[0] for x in self.tables[self.figTable]]
-        replacements = dict( zip(keys, [filename, caption]))
+        replacements = dict(zip(keys, [filename, caption]))
         self._insertOrUpdate(self.figTable, replacements, ['filename'])
 
         if self.wwwCache:
             curs = self.cacheConnect()
             keys = [x.split()[0] for x in self.cacheTables[self.allFigTable]]
-            replacements = dict( zip(keys, [path, caption]))
+            replacements = dict(zip(keys, [path, caption]))
             self._insertOrUpdate(self.allFigTable, replacements, ['path'], cache=True)
             self.cacheClose()
 
-            
     def importLogs(self, logFiles):
         """Import logs from logFiles output by pipette."""
-        
-        # convert our ascii logfile to a sqlite3 database    
+
+        # convert our ascii logfile to a sqlite3 database
         def importLog(logFile):
             base = os.path.basename(logFile)
             table = "log_" + re.sub(".log", "", base)
@@ -879,7 +841,6 @@ class TestSet(object):
         else:
             importLog(logFile)
 
-            
     def importEupsSetups(self, eupsSetupFiles):
         """Import the EUPS setup packages from files written by TestData object during pipette run."""
 
@@ -909,13 +870,13 @@ class TestSet(object):
             for setup in setups:
                 product, version = setup
                 mykeys = [x.split()[0] for x in mykeys]
-                replacements = dict( zip(mykeys, [product, version]))
+                replacements = dict(zip(mykeys, [product, version]))
                 self._insertOrUpdate(table, replacements, ['product'])
-            
+
         # allow a list of files or just one
         if isinstance(eupsSetupFiles, list):
             for eupsSetupFile in eupsSetupFiles:
                 importEups(eupsSetupFile)
         else:
             importEups(eupsSetupFile)
-                
+
